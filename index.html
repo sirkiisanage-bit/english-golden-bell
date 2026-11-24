@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>도전! 영어 단어·구문·회화 500 골든벨</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+    .student-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-press:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-3 sm:p-6">
+
+  <!-- 1. 초기 역할 선택 화면 -->
+  <div id="role-screen" class="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center mt-4 border border-slate-100">
+    <div class="inline-block bg-amber-100 text-amber-800 font-bold px-4 py-1.5 rounded-full text-sm mb-4">
+      🔔 실시간 수업용 인터랙티브 퀴즈
+    </div>
+    <h1 class="text-2xl sm:text-4xl font-black text-blue-900 mb-3 tracking-tight">
+      영어 단어·구문·회화 500 골든벨
+    </h1>
+    <p class="text-slate-500 text-sm sm:text-base mb-8">
+      필수 영단어 167제 + 원어민 핵심 구문 167제 + 실생활 회화 167제 (총 501문제)
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <button onclick="initTeacher(false)" class="btn-press flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-2xl shadow-lg shadow-blue-200 transition">
+        <span class="text-4xl mb-2">👨‍🏫</span>
+        <span class="text-xl font-bold">선생님 (방 만들기)</span>
+        <span class="text-xs text-blue-100 mt-1">교실 TV / 선생님 PC용</span>
+      </button>
+
+      <button onclick="showStudentJoin()" class="btn-press flex flex-col items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white p-6 rounded-2xl shadow-lg shadow-emerald-200 transition">
+        <span class="text-4xl mb-2">🙋‍♂️</span>
+        <span class="text-xl font-bold">학생 (참여하기)</span>
+        <span class="text-xs text-emerald-100 mt-1">학생 태블릿 / 스마트폰용</span>
+      </button>
+    </div>
+
+    <div class="border-t border-slate-200 pt-5">
+      <button onclick="initDemoMode()" class="btn-press w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-200 font-bold py-3.5 px-5 rounded-2xl transition flex items-center justify-center gap-2">
+        <span>⚡</span>
+        <span>한 화면 체험 모드 (선생님 + 학생 화면 동시 테스트)</span>
+      </button>
+      <p class="text-xs text-slate-400 mt-2">
+        다른 기기 없이 지금 화면에서 바로 문제를 내고 학생 입장에서 눌러볼 수 있습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 메인 작업 영역 (실제 모드 또는 체험 모드 시 분할 표시) -->
+  <div id="workspace" class="hidden w-full max-w-6xl flex flex-col lg:flex-row gap-6 items-start justify-center">
+
+    <!-- 2. 선생님 대시보드 화면 -->
+    <div id="teacher-screen" class="hidden w-full flex-1 bg-white rounded-3xl shadow-xl p-5 sm:p-7 border border-slate-100">
+      <!-- 상단 바: 참여 코드 및 출제 범위 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-bold text-slate-500">참여 코드:</span>
+          <span id="room-code-display" class="text-2xl sm:text-3xl font-black text-blue-600 bg-blue-50 px-4 py-1 rounded-xl tracking-widest">
+            생성중...
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="category-select" onchange="resetPool()" class="bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+            <option value="CHAIN">🔗 단계별 연계 세트 (단어→구문→회화)</option>
+            <option value="ALL">🎲 전체 501문제 (랜덤)</option>
+            <option value="WORD">1. 기초 영단어 (167문제)</option>
+            <option value="PHRASE">2. 필수 구문/숙어 (167문제)</option>
+            <option value="CONV">3. 실생활 회화 (167문제)</option>
+          </select>
+          <button onclick="location.reload()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2.5 rounded-xl">
+            처음으로
+          </button>
+        </div>
+      </div>
+
+      <!-- 문제 출제 영역 -->
+      <div class="py-6 text-center">
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <span id="teacher-category" class="bg-indigo-100 text-indigo-800 text-xs sm:text-sm font-bold px-3.5 py-1 rounded-full">
+            대기 중
+          </span>
+          <button id="btn-speak" onclick="speakCurrentWord()" class="hidden bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-full transition flex items-center gap-1">
+            <span>🔊 발음 듣기</span>
+          </button>
+        </div>
+
+        <div id="teacher-word" class="text-2xl sm:text-4xl font-black text-slate-900 my-4 min-h-[3.5rem] flex items-center justify-center px-2 break-keep">
+          학생들이 입장하면 [다음 문제 출제]를 눌러주세요!
+        </div>
+
+        <!-- 보기 미리보기 -->
+        <div id="teacher-options-preview" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-2xl mx-auto my-4"></div>
+
+        <!-- 정답 안내 -->
+        <div id="teacher-answer-info" class="text-lg sm:text-xl font-extrabold text-emerald-600 min-h-[2rem] my-2"></div>
+
+        <!-- 컨트롤 버튼 -->
+        <div class="flex flex-wrap justify-center gap-3 mt-4">
+          <button onclick="nextQuestion()" class="btn-press bg-blue-600 hover:bg-blue-700 text-white font-bold text-base sm:text-lg px-6 py-3.5 rounded-2xl shadow-md transition">
+            ▶️ 다음 문제 출제
+          </button>
+          <button id="btn-reveal" onclick="revealAnswer()" disabled class="btn-press bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base sm:text-lg px-6 py-3.5 rounded-2xl shadow-md transition">
+            👀 정답 공개
+          </button>
+        </div>
+      </div>
+
+      <!-- 실시간 학생 현황판 -->
+      <div class="border-t border-slate-200 pt-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-slate-700 text-base sm:text-lg">
+            참여 학생 현황 (<span id="student-count" class="text-blue-600">0</span>명)
+          </h3>
+          <span class="text-xs text-slate-400">점수순 자동 정렬</span>
+        </div>
+        <div id="student-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 min-h-[80px] bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+          <div class="col-span-full text-center text-slate-400 text-sm py-4">
+            아직 입장한 학생이 없습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 학생 입장 화면 -->
+    <div id="student-join-screen" class="hidden w-full max-w-md mx-auto bg-white rounded-3xl shadow-xl p-7 text-center border border-slate-100">
+      <h2 class="text-2xl font-black text-slate-800 mb-2">🔔 골든벨 입장하기</h2>
+      <p class="text-sm text-slate-500 mb-6">선생님 화면에 뜬 4자리 코드와 이름을 입력하세요.</p>
+
+      <div class="space-y-3 mb-5">
+        <input type="text" id="input-room-code" placeholder="방 코드 4자리 (예: 4829)" maxlength="4" inputmode="numeric"
+          class="w-full text-center text-xl font-bold tracking-widest border-2 border-slate-200 focus:border-emerald-500 rounded-xl py-3 px-4 outline-none">
+        <input type="text" id="input-student-name" placeholder="내 이름 입력 (예: 김민준)" maxlength="10"
+          class="w-full text-center text-lg font-bold border-2 border-slate-200 focus:border-emerald-500 rounded-xl py-3 px-4 outline-none">
+      </div>
+
+      <button onclick="joinRoom()" class="btn-press w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-3.5 rounded-xl shadow-md transition">
+        입장하기
+      </button>
+      <button onclick="location.reload()" class="mt-3 text-xs text-slate-400 underline">뒤로 가기</button>
+      <p id="join-error" class="text-red-500 text-sm font-bold mt-3"></p>
+    </div>
+
+    <!-- 4. 학생 문제 풀이 화면 -->
+    <div id="student-play-screen" class="hidden w-full lg:w-[420px] mx-auto bg-white rounded-3xl shadow-xl p-5 sm:p-6 border-2 border-emerald-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="student-header" class="font-bold text-slate-700 text-sm sm:text-base">참가자</span>
+        </div>
+        <span id="student-score-badge" class="bg-slate-800 text-amber-400 font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full">
+          내 점수: 0점
+        </span>
+      </div>
+
+      <div class="text-center py-5">
+        <span id="student-category" class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mb-3">
+          대기 중
+        </span>
+        <div id="student-word" class="text-2xl sm:text-3xl font-black text-slate-900 my-3 min-h-[4rem] flex items-center justify-center break-keep">
+          선생님이 문제를 출제할 때까지 기다려주세요...
+        </div>
+      </div>
+
+      <!-- 4지선다 버튼 영역 -->
+      <div id="student-options" class="grid grid-cols-1 gap-2.5"></div>
+
+      <!-- 결과 피드백 메시지 -->
+      <div id="student-result-msg" class="text-center font-extrabold text-base sm:text-lg mt-4 min-h-[2rem]"></div>
+    </div>
+
+  </div>
+
+  <!-- 커스텀 알림 모달 (alert 대체) -->
+  <div id="toast-msg" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-bold opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+  </div>
+
+  <script>
+    // =========================================================================
+    // [연계형 영어 학습 501문제 데이터베이스]
+    // 167개의 핵심 테마별로 [단어(W) -> 구문/숙어(P) -> 실생활 회화(C)]가
+    // 동일한 핵심 어휘와 구문을 공유하며 단계적으로 확장되도록 설계되었습니다.
+    // 형식: [카테고리, 문제, 정답, 오답1, 오답2, 오답3]
+    // =========================================================================
+    const rawData = [
+      // 세트 1: look (보다 -> 찾다 -> 둘러보는 중이에요)
+      ["W","look","보다","듣다","말하다","걷다"],
+      ["P","look for","~을 찾다","~을 버리다","~을 숨기다","~을 닫다"],
+      ["C","I'm looking for my phone.","내 휴대폰을 찾고 있어요.","그냥 둘러보는 중이에요.","이거 살게요.","어디에 있나요?"],
+
+      // 세트 2: take (가져가다/타다 -> 돌보다 -> 잘 돌봐줘/몸조심해)
+      ["W","take","가져가다/취하다","주다","던지다","놓다"],
+      ["P","take care of","~을 돌보다","~을 괴롭히다","~을 잊다","~을 피하다"],
+      ["C","Please take care of yourself!","몸조심해! (스스로 잘 돌봐!)","너 혼자 해!","조심해서 운전해!","물건 챙겨!"],
+
+      // 세트 3: time (시간 -> 정각에 -> 정각에 도착했어)
+      ["W","time","시간","장소","날씨","가격"],
+      ["P","on time","정각에 (제시간에)","늦게","가끔","절대"],
+      ["C","The train arrived on time.","기차가 정각에 도착했어요.","지금 몇 시예요?","시간이 얼마나 걸려요?","기차가 늦었어요."],
+
+      // 세트 4: good (좋은 -> ~을 잘하다 -> 나는 영어를 잘해)
+      ["W","good","좋은","나쁜","슬픈","어려운"],
+      ["P","be good at","~을 잘하다","~을 싫어하다","~에 늦다","~에 놀라다"],
+      ["C","She is very good at English.","그녀는 영어를 매우 잘해.","그거 좋은 생각이야!","그건 안 돼!","영어가 너무 어려워."],
+
+      // 세트 5: make (만들다 -> 실수하다 -> 누구나 실수를 해)
+      ["W","make","만들다","부수다","지우다","숨기다"],
+      ["P","make a mistake","실수하다","성공하다","사과하다","칭찬받다"],
+      ["C","Everyone makes a mistake sometimes.","누구나 가끔 실수를 해.","말이 되네 / 일리가 있네.","실수하지 마.","완벽하게 해냈어."],
+
+      // 세트 6: give (주다 -> 포기하다 -> 포기하지 마!)
+      ["W","give","주다","받다","빼앗다","빌리다"],
+      ["P","give up","포기하다","도전하다","성공하다","시작하다"],
+      ["C","Don't give up! You can do it.","포기하지 마! 넌 할 수 있어.","주지 마!","울지 마!","서두르지 마!"],
+
+      // 세트 7: hurry (서두르다 -> 서둘러! -> 서둘러, 늦겠어!)
+      ["W","hurry","서두르다","멈추다","기다리다","쉬다"],
+      ["P","hurry up","서두르다","천천히 하다","미루다","포기하다"],
+      ["C","Hurry up, or we'll be late.","서둘러, 안 그러면 늦겠어.","천천히 가도 돼.","이미 늦었어.","일찍 도착했어."],
+
+      // 세트 8: late (늦은 -> ~에 늦다 -> 수업에 늦었어)
+      ["W","late","늦은","빠른","일찍","정각의"],
+      ["P","be late for","~에 늦다","~을 준비하다","~에 참석하다","~을 기다리다"],
+      ["C","I'm sorry I'm late for class.","수업에 늦어서 미안해.","일찍 와서 미안해.","기다려줘서 고마워.","어디 갔었니?"],
+
+      // 세트 9: wait (기다리다 -> ~을 기다리다 -> 버스를 기다리고 있어)
+      ["W","wait","기다리다","떠나다","도착하다","달리다"],
+      ["P","wait for","~을 기다리다","~을 떠나다","~을 잊다","~을 찾다"],
+      ["C","I'm waiting for the bus.","버스를 기다리고 있어요.","지금 당장 오세요.","기다릴 필요 없어요.","버스를 놓쳤어요."],
+
+      // 세트 10: help (돕다 -> ~을 돕다 -> 숙제하는 걸 도와줄게)
+      ["W","help","돕다","방해하다","거절하다","숨기다"],
+      ["P","help A with B","A가 B 하는 것을 돕다","A가 B 하는 것을 막다","A에게 B를 시키다","A 대신 B를 하다"],
+      ["C","Let me help you with your homework.","네 숙제하는 걸 내가 도와줄게.","저 좀 도와주시겠어요?","혼자 할 수 있어요.","필요 없어요."],
+
+      // 세트 11: try (시도하다 -> 입어보다 -> 이거 입어 봐도 될까요?)
+      ["W","try","시도하다/노력하다","포기하다","거절하다","피하다"],
+      ["P","try on","(옷을) 입어 보다","벗어 던지다","빨래하다","환불하다"],
+      ["C","Can I try this jacket on?","이 재킷 입어 봐도 될까요?","이거 먹어 봐도 될까요?","이거 얼마예요?","더 큰 사이즈 있나요?"],
+
+      // 세트 12: find (찾다 -> 알아내다 -> 정답을 알아냈어!)
+      ["W","find","찾다/발견하다","잃어버리다","버리다","숨기다"],
+      ["P","find out","알아내다/발견하다","잊어버리다","착각하다","숨기다"],
+      ["C","I finally found out the answer!","드디어 정답을 알아냈어!","찾기 어려울 거예요.","잃어버렸어요.","어디에 있나요?"],
+
+      // 세트 13: get (얻다/되다 -> 일어나다 -> 몇 시에 일어나니?)
+      ["W","get","얻다/받다","잃다","주다","버리다"],
+      ["P","get up","일어나다","잠자리에 들다","앉다","눕다"],
+      ["C","What time do you get up?","몇 시에 일어나니?","몇 시에 자니?","언제 출발하니?","지금 몇 시니?"],
+
+      // 세트 14: go (가다 -> ~할 예정이다 -> 오늘 밤에 공부할 예정이야)
+      ["W","go","가다","오다","멈추다","머무르다"],
+      ["P","be going to","~할 예정이다","~했었다","~하지 않을 것이다","~하는 중이다"],
+      ["C","I'm going to study tonight.","오늘 밤에 공부할 예정이야.","어디 가는 중이니?","언제 갈 거니?","같이 갈래?"],
+
+      // 세트 15: come (오다 -> 떠올리다 -> 좋은 아이디어를 떠올렸어)
+      ["W","come","오다","가다","떠나다","숨다"],
+      ["P","come up with","(생각을) 떠올리다","잊어버리다","포기하다","반대하다"],
+      ["C","She came up with a great idea.","그녀는 멋진 아이디어를 떠올렸어.","어떻게 여기 왔니?","언제 집에 가니?","무슨 일이니?"],
+
+      // 세트 16: turn (돌다/바꾸다 -> 켜다 -> 불 좀 켜주세요)
+      ["W","turn","돌다/바꾸다","직진하다","멈추다","건너다"],
+      ["P","turn on","(전원·불을) 켜다","끄다","부수다","줄이다"],
+      ["C","Please turn on the light.","불 좀 켜주세요.","모퉁이에서 좌회전하세요.","불 좀 꺼주세요.","여기서 멈추세요."],
+
+      // 세트 17: put (놓다/두다 -> 미루다 -> 내일로 미루지 마)
+      ["W","put","놓다/두다","집어 들다","던지다","치우다"],
+      ["P","put off","미루다/연기하다","앞당기다","취소하다","시작하다"],
+      ["C","Don't put it off until tomorrow.","내일로 미루지 마.","내일 다시 해.","오늘 끝내지 마.","내일 만나자."],
+
+      // 세트 18: keep (유지하다/지키다 -> 연락하고 지내다 -> 계속 연락하고 지내자!)
+      ["W","keep","유지하다/가지다","버리다","잃어버리다","나누다"],
+      ["P","keep in touch","연락하고 지내다","연락을 끊다","만나지 않다","싸우다"],
+      ["C","Let's keep in touch!","계속 연락하고 지내자!","다시는 연락하지 마!","조심해서 가!","잘 지내!"],
+
+      // 세트 19: worry (걱정하다 -> ~에 대해 걱정하다 -> 걱정하지 마!)
+      ["W","worry","걱정하다","안심하다","웃다","축하하다"],
+      ["P","worry about","~에 대해 걱정하다","~을 축하하다","~을 즐기다","~을 잊다"],
+      ["C","Don't worry about it.","그것에 대해 걱정하지 마.","그것을 꼭 기억해.","그것을 조심해.","내 잘못이야."],
+
+      // 세트 20: afraid (무서워하는 -> ~을 무서워하다 -> 나는 개를 무서워해)
+      ["W","afraid","무서워하는","용감한","기쁜","심심한"],
+      ["P","be afraid of","~을 무서워하다","~을 자랑스러워하다","~에 만족하다","~을 좋아하다"],
+      ["C","I'm afraid of big dogs.","나는 큰 개를 무서워해.","무서워서 못 가겠어.","유감이지만 못 갈 것 같아.","내가 해낼 거야."],
+
+      // 세트 21: proud (자랑스러운 -> ~을 자랑스러워하다 -> 네가 자랑스러워)
+      ["W","proud","자랑스러운","부끄러운","슬픈","화난"],
+      ["P","be proud of","~을 자랑스러워하다","~을 부끄러워하다","~을 걱정하다","~을 미워하다"],
+      ["C","I'm so proud of you!","네가 정말 자랑스러워!","네가 정말 부러워!","네가 걱정돼!","실망이야!"],
+
+      // 세트 22: interested (관심 있는 -> ~에 관심이 있다 -> 음악에 관심이 있어)
+      ["W","interested","관심 있는","지루한","피곤한","화난"],
+      ["P","be interested in","~에 관심이 있다","~에 실망하다","~을 무서워하다","~을 싫어하다"],
+      ["C","I'm interested in music.","나는 음악에 관심이 있어.","나는 음악을 잘해.","나는 음악이 지루해.","음악을 듣고 있어."],
+
+      // 세트 23: ready (준비된 -> ~할 준비가 되다 -> 시험 볼 준비 됐니?)
+      ["W","ready","준비된","늦은","바쁜","피곤한"],
+      ["P","be ready for","~할 준비가 되다","~을 포기하다","~을 잊어버리다","~에 늦다"],
+      ["C","Are you ready for the test?","시험 볼 준비 됐니?","떠날 준비 되셨나요?","계산하실 건가요?","맛있게 드셨나요?"],
+
+      // 세트 24: full (가득 찬/배부른 -> ~으로 가득 차다 -> 방이 사람들로 가득 찼어)
+      ["W","full","가득 찬/배부른","텅 빈","배고픈","목마른"],
+      ["P","be full of","~으로 가득 차다","~이 텅 비다","~이 부족하다","~을 비우다"],
+      ["C","The room is full of people.","방이 사람들로 가득 차 있어.","배불러요. 감사합니다.","가득 채워주세요.","목말라요."],
+
+      // 세트 25: different (다른 -> ~와 다르다 -> 내 생각은 너와 달라)
+      ["W","different","다른","같은","비슷한","똑같은"],
+      ["P","be different from","~와 다르다","~와 똑같다","~와 친하다","~와 비슷하다"],
+      ["C","My opinion is different from yours.","내 의견은 네 의견과 달라.","그건 완전히 똑같아.","아무 소용없어.","전혀 다르지 않아."],
+
+      // 세트 26: same (같은 -> ~와 같은 -> 내 가방은 네 것과 같아)
+      ["W","same","같은","다른","새로운","반대의"],
+      ["P","the same as","~와 같은","~와 다른","~보다 큰","~대신에"],
+      ["C","My bag is the same as yours.","내 가방은 네 가방과 같아.","나는 달라!","늘 똑같아!","여기가 거기야!"],
+
+      // 세트 27: agree (동의하다 -> ~에 동의하다 -> 네 말에 동의해)
+      ["W","agree","동의하다","반대하다","거절하다","싸우다"],
+      ["P","agree with","~에 동의하다","~에 반대하다","~을 무시하다","~와 다투다"],
+      ["C","I agree with you completely.","네 말에 전적으로 동의해.","나는 동의하지 않아.","잘 모르겠어.","그건 틀렸어."],
+
+      // 세트 28: think (생각하다 -> ~에 대해 생각하다 -> 그 문제에 대해 생각해 볼게)
+      ["W","think","생각하다","행동하다","말하다","잊다"],
+      ["P","think about","~에 대해 생각하다","~을 잊어버리다","~을 무시하다","~을 포기하다"],
+      ["C","I'll think about it.","그것에 대해 생각해 볼게.","나는 그렇게 생각하지 않아.","확실해.","생각 중이야."],
+
+      // 세트 29: know (알다 -> 나에게 알려줘 -> 나에게 꼭 알려줘)
+      ["W","know","알다","모르다","잊다","배우다"],
+      ["P","let A know","A에게 알려주다","A를 속이다","A를 잊다","A에게 묻다"],
+      ["C","Please let me know.","나에게 꼭 알려줘.","나는 이미 알고 있어.","비밀로 해줘.","모르는 척해."],
+
+      // 세트 30: understand (이해하다 -> 서로 이해하다 -> 우리는 서로를 이해해)
+      ["W","understand","이해하다","오해하다","모르다","의심하다"],
+      ["P","understand each other","서로를 이해하다","서로 다투다","거짓말하다","침묵하다"],
+      ["C","We understand each other well.","우리는 서로를 잘 이해해.","이해가 안 돼요.","다시 말해주세요.","동의해요."],
+
+      // 세트 31: remember (기억하다 -> ~할 것을 기억하다 -> 문 잠그는 걸 기억해)
+      ["W","remember","기억하다","잊어버리다","착각하다","상상하다"],
+      ["P","remember to + 동사","(앞으로) ~할 것을 기억하다","과거에 ~했던 것을 기억하다","~하는 것을 잊다","~하지 않기로 결심하다"],
+      ["C","Remember to lock the door.","문 잠그는 것을 꼭 기억해.","그의 이름이 기억나지 않아.","이름이 뭐니?","잊어버리지 마."],
+
+      // 세트 32: forget (잊어버리다 -> ~에 대해 잊어버리다 -> 그냥 잊어버려)
+      ["W","forget","잊어버리다","기억하다","외우다","기록하다"],
+      ["P","forget about","~에 대해 잊어버리다","~을 기억해 내다","~을 걱정하다","~을 준비하다"],
+      ["C","Just forget about it.","그냥 잊어버려 (신경 쓰지 마).","절대 잊지 마.","다시 생각해 봐.","기억해 둬."],
+
+      // 세트 33: believe (믿다 -> ~의 존재·가치를 믿다 -> 나는 너를 믿어)
+      ["W","believe","믿다","의심하다","속이다","부정하다"],
+      ["P","believe in","~의 존재·가치를 믿다","~을 의심하다","~을 배신하다","~을 포기하다"],
+      ["C","I believe in you!","나는 너를 믿어! (네 능력을 믿어!)","절대 믿지 마.","믿거나 말거나.","거짓말이야."],
+
+      // 세트 34: care (돌보다/신경 쓰다 -> ~을 신경 쓰다 -> 나는 신경 안 써)
+      ["W","care","돌보다/신경 쓰다","무시하다","괴롭히다","버리다"],
+      ["P","care about","~을 신경 쓰다/관심 갖다","~을 무시하다","~을 미워하다","~을 잊다"],
+      ["C","I don't care about that.","난 그런 거 신경 안 써.","나는 매우 걱정돼.","잘 돌봐줘.","조심해."],
+
+      // 세트 35: mind (마음/꺼리다 -> 결심하다 -> 나는 결심을 굳혔어)
+      ["W","mind","마음/꺼리다","몸","기억","생각"],
+      ["P","make up one's mind","결심하다","망설이다","포기하다","후회하다"],
+      ["C","I made up my mind.","나는 결심했어.","신경 쓰지 마 / 괜찮아.","마음에 들어.","조심해."],
+
+      // 세트 36: matter (문제/중요하다 -> 무슨 일이 있더라도 -> 무슨 일이 있어도 도와줄게)
+      ["W","matter","문제/중요하다","해결책","사소한 것","장난"],
+      ["P","no matter what","무슨 일이 있더라도","아무것도 아닌","전혀 ~않는","가끔씩"],
+      ["C","I'll help you no matter what.","무슨 일이 있더라도 너를 도와줄게.","무슨 일이야? / 왜 그래?","중요한 일이니?","어디 가니?"],
+
+      // 세트 37: wrong (틀린/잘못된 -> 잘못되다/고장 나다 -> 무언가 잘못됐어)
+      ["W","wrong","틀린/잘못된","옳은","정확한","완벽한"],
+      ["P","go wrong","잘못되다/고장 나다","잘 풀리다","성공하다","시작하다"],
+      ["C","Something went wrong with my PC.","내 컴퓨터에 무언가 문제가 생겼어(고장 났어).","무슨 일 있어?","어디 가니?","잘했어."],
+
+      // 세트 38: right (오른쪽/옳은 -> 지금 당장 -> 지금 당장 시작하자)
+      ["W","right","오른쪽/옳은","왼쪽/틀린","위쪽","아래쪽"],
+      ["P","right now","지금 당장","나중에","어제","언젠가"],
+      ["C","Let's start right now!","지금 당장 시작하자!","네가 틀렸어!","오른쪽으로 가!","나중에 하자!"],
+
+      // 세트 39: sure (확신하는 -> 반드시 ~하다 -> 문 닫았는지 꼭 확인해)
+      ["W","sure","확신하는","의심하는","모르는","불안한"],
+      ["P","make sure","반드시 ~하다/확인하다","대충 넘어가다","잊어버리다","의심하다"],
+      ["C","Make sure you close the window.","창문 닫았는지 반드시 확인해.","잘 모르겠어 / 확실하지 않아.","물론이지!","당연하지!"],
+
+      // 세트 40: course (과정/진로 -> 물론이지 -> 물론이지, 도와줄 수 있어!)
+      ["W","course","과정/진로/코스","결과","시작","끝"],
+      ["P","of course","물론이지","절대 아니야","아마도","가끔"],
+      ["C","Of course, I can help you!","물론이지, 내가 도와줄 수 있어!","물론 아니지!","글쎄!","아마도!"],
+
+      // 세트 41: way (길/방법 -> 그런데/그건 그렇고 -> 그런데 몇 시니?)
+      ["W","way","길/방법","목적지","장애물","지도"],
+      ["P","by the way","그건 그렇고/그런데","그러므로","예를 들어","결론적으로"],
+      ["C","By the way, what time is it?","그건 그렇고, 지금 몇 시니?","길을 잃었어.","다 왔어.","지금 가는 중이야."],
+
+      // 세트 42: long (긴/오랜 -> 하루 종일 -> 어제 하루 종일 비가 왔어)
+      ["W","long","긴/오랜","짧은","높은","낮은"],
+      ["P","all day long","하루 종일","잠깐 동안","밤에만","일주일에 한 번"],
+      ["C","It rained all day long yesterday.","어제 하루 종일 비가 왔어.","오랜만이야!","시간이 오래 걸려!","나중에 봐!"],
+
+      // 세트 43: far (먼 -> 지금까지 -> 지금까지는 순조로워)
+      ["W","far","먼","가까운","높은","깊은"],
+      ["P","so far","지금까지","앞으로","영원히","처음에"],
+      ["C","So far, everything is going well.","지금까지는 모든 게 잘 풀리고 있어.","지금까지 최악이야.","앞으로가 걱정이야.","여기서 얼마나 머나요?"],
+
+      // 세트 44: well (잘/건강한 -> (병이) 낫다 -> 빨리 나으세요!)
+      ["W","well","잘/건강한","아픈","서투른","나쁜"],
+      ["P","get well","(병이) 낫다/회복하다","감기에 걸리다","다치다","피곤해지다"],
+      ["C","Get well soon!","빨리 나으세요! (쾌유를 빕니다!)","빨리 오세요!","잘 자요!","건강 조심하세요!"],
+
+      // 세트 45: feel (느끼다 -> ~하고 싶은 기분이다 -> 오늘 외식하고 싶은 기분이야)
+      ["W","feel","느끼다","생각하다","말하다","보다"],
+      ["P","feel like ~ing","~하고 싶은 기분이다","~하기 싫다","~해야만 한다","~한 적이 있다"],
+      ["C","I feel like eating out today.","오늘은 외식하고 싶은 기분이야.","오늘 날씨 어때요?","무슨 생각 해요?","어디 아파요?"],
+
+      // 세트 46: sound (소리/~처럼 들리다 -> ~처럼 들리다 -> 좋은 계획처럼 들리네!)
+      ["W","sound","소리/~처럼 들리다","냄새","맛","모양"],
+      ["P","sound like","~처럼 들리다","~처럼 보이다","~한 냄새가 나다","~한 맛이 나다"],
+      ["C","That sounds like a great plan!","그거 멋진 계획처럼 들리네! (좋아!)","소리가 너무 커!","이상하게 들려!","싫어!"],
+
+      // 세트 47: pleasure (기쁨 -> 기꺼이 -> 기꺼이 도와드릴게요)
+      ["W","pleasure","기쁨/즐거움","슬픔","고통","화남"],
+      ["P","with pleasure","기꺼이","마지못해","절대 안 돼","슬프게도"],
+      ["C","I will help you with pleasure.","기꺼이 도와드릴게요.","내 기분이 나빠요.","부탁이 있어요.","천만에요."],
+
+      // 세트 48: favor (호의/부탁 -> 부탁을 들어주다 -> 부탁 하나만 들어줄래?)
+      ["W","favor","호의/부탁","거절","명령","사과"],
+      ["P","do A a favor","A의 부탁을 들어주다","A에게 명령하다","A를 거절하다","A에게 사과하다"],
+      ["C","Can you do me a favor?","부탁 하나만 들어줄래?","내가 도와줄까?","호의를 베풀어줄래?","무슨 일이니?"],
+
+      // 세트 49: excuse (변명/용서하다 -> 변명하다 -> 변명하지 마)
+      ["W","excuse","변명/용서하다","칭찬","감사","약속"],
+      ["P","make an excuse","변명하다","약속하다","사과하다","칭찬하다"],
+      ["C","Don't make an excuse.","변명하지 마.","실례합니다.","고맙습니다.","축하합니다."],
+
+      // 세트 50: pardon (용서 -> 용서를 구하다/다시 묻다 -> 뭐라고요?/다시 말씀해 주시겠어요?)
+      ["W","pardon","용서/사면","처벌","거절","비난"],
+      ["P","beg one's pardon","용서를 구하다 / 다시 묻다","화내다","칭찬하다","떠나다"],
+      ["C","I beg your pardon?","뭐라고요? (다시 말씀해 주시겠어요?)","용서해 주세요.","비켜주세요.","도와주세요."],
+
+      // 세트 51: say (말하다 -> 다시 말하다 -> 다시 한 번 말씀해 주시겠어요?)
+      ["W","say","말하다","듣다","읽다","쓰다"],
+      ["P","say that again","다시 말하다","그만 말하다","속삭이다","소리치다"],
+      ["C","Could you say that again?","다시 한 번 말씀해 주시겠어요?","그만 말씀해 주세요.","천천히 걸어주세요.","크게 웃어주세요."],
+
+      // 세트 52: speak (말하다 -> 천천히 말하다 -> 좀 더 천천히 말씀해 주시겠어요?)
+      ["W","speak","말하다","듣다","보다","자다"],
+      ["P","speak slowly","천천히 말하다","빨리 말하다","조용히 하다","크게 웃다"],
+      ["C","Could you speak more slowly?","좀 더 천천히 말씀해 주시겠어요?","빨리 말씀해 주세요.","조용히 해주세요.","영어로 말해주세요."],
+
+      // 세트 53: mean (의미하다/의도하다 -> ~하기로 되어 있다 -> 우리는 오늘 만나기로 되어 있었어)
+      ["W","mean","의미하다/의도하다","친절한","이해하다","잊다"],
+      ["P","be meant to","~하기로 되어 있다","~해서는 안 된다","~할 수 없다","~하기 싫다"],
+      ["C","We were meant to meet today.","우리는 오늘 만나기로 되어 있었어.","무슨 뜻이야?","무엇을 원하니?","어떻게 생각하니?"],
+
+      // 세트 54: honest (정직한 -> 솔직히 말해서 -> 솔직히 말해서, 난 그게 마음에 안 들어)
+      ["W","honest","정직한","거짓된","게으른","이기적인"],
+      ["P","to be honest","솔직히 말해서","거짓말을 하자면","간단히 말해서","예를 들자면"],
+      ["C","To be honest, I don't like it.","솔직히 말해서, 난 그게 마음에 안 들어.","거짓말하지 마.","솔직하게 말해봐.","난 그게 정말 좋아."],
+
+      // 세트 55: opinion (의견 -> 내 생각에는 -> 내 생각에는 그거 너무 비싸)
+      ["W","opinion","의견/생각","사실","거짓","비밀"],
+      ["P","in my opinion","내 생각에는","네 말대로라면","사실상","반면에"],
+      ["C","In my opinion, it's too expensive.","내 생각에는 그거 너무 비싸.","내 경험으로는 싸.","네 의견에 동의해.","얼마인지 모르겠어."],
+
+      // 세트 56: depend (의존하다/달려 있다 -> ~에 달려 있다 -> 날씨에 따라 달라)
+      ["W","depend","의존하다/달려 있다","독립하다","거부하다","무시하다"],
+      ["P","depend on","~에 달려 있다/의존하다","~로부터 독립하다","~을 무시하다","~을 거부하다"],
+      ["C","It depends on the weather.","날씨에 따라 달라.","날씨가 아주 좋아.","그건 확실해.","내가 결정해."],
+
+      // 세트 57: deal (거래/다루다 -> ~을 다루다/처리하다 -> 내가 그 문제를 처리할게)
+      ["W","deal","거래/다루다","거절","실수","포기"],
+      ["P","deal with","~을 다루다/처리하다","~을 피하다","~을 포기하다","~을 망치다"],
+      ["C","I will deal with the problem.","내가 그 문제를 처리할게.","별일 아니야.","비싼 거래야.","포기할래."],
+
+      // 세트 58: big (큰 -> 대단한 일/큰일 -> 그거 정말 대단한 일이다!)
+      ["W","big","큰","작은","짧은","가벼운"],
+      ["P","big deal","대단한 일 / 큰일","작은 실수","아무것도 아닌 일","비밀"],
+      ["C","That's a big deal!","그거 정말 대단한 일이다! (큰일이네!)","별일 아니야!","너무 작아!","싸게 샀네!"],
+
+      // 세트 59: piece (조각 -> 한 조각의 ~ -> 식은 죽 먹기지!)
+      ["W","piece","조각","전체","덩어리","상자"],
+      ["P","a piece of","한 조각의 ~","수많은 ~","가득 찬 ~","텅 빈 ~"],
+      ["C","It's a piece of cake!","식은 죽 먹기지! (매우 쉬워!)","케이크 한 조각이야!","매우 어려워!","배가 고파!"],
+
+      // 세트 60: easy (쉬운 -> 진정하다/쉬엄쉬엄 하다 -> 진정해! 쉬엄쉬엄 해!)
+      ["W","easy","쉬운","어려운","복잡한","힘든"],
+      ["P","take it easy","진정하다 / 쉬엄쉬엄 하다","어렵게 생각하다","서두르다","화내다"],
+      ["C","Take it easy!","진정해! / 쉬엄쉬엄 해!","쉽게 생각해!","빨리 끝내!","조심해!"],
+
+      // 세트 61: calm (차분한 -> 진정하다 -> 제발 진정하세요)
+      ["W","calm","차분한/고요한","흥분한","시끄러운","화난"],
+      ["P","calm down","진정하다","흥분하다","소리치다","서두르다"],
+      ["C","Please calm down.","제발 진정하세요.","흥분하세요.","서두르세요.","조용히 하세요."],
+
+      // 세트 62: cheer (응원/기운 -> 힘내다 -> 힘내! 다 잘될 거야)
+      ["W","cheer","응원/환호","야유","슬픔","포기"],
+      ["P","cheer up","힘내다/기운 내다","우울해하다","포기하다","화내다"],
+      ["C","Cheer up! Everything will be fine.","힘내! 다 잘될 거야.","조용히 해!","일어나!","서둘러!"],
+
+      // 세트 63: hang (걸다/매달다 -> 어울려 놀다 -> 주말에 친구들과 어울려 놀았어)
+      ["W","hang","걸다/매달다","내리다","던지다","자르다"],
+      ["P","hang out","어울려 놀다","싸우다","공부하다","일하다"],
+      ["C","I hung out with my friends.","주말에 친구들과 어울려 놀았어.","조금만 더 버텨!","잠깐 기다려!","포기해!"],
+
+      // 세트 64: break (부수다/휴식 -> 휴식을 취하다 -> 잠깐 휴식을 취하자)
+      ["W","break","부수다/휴식","고치다","만들다","계속하다"],
+      ["P","take a break","휴식을 취하다","밤새 일하다","달리기하다","고장 내다"],
+      ["C","Let's take a short break.","잠깐 휴식을 취하자.","다리가 부러졌어!","조심해서 걸어!","포기해!"],
+
+      // 세트 65: luck (행운 -> 행운을 빌어주다 -> 시험 잘 봐!)
+      ["W","luck","행운","불행","실력","노력"],
+      ["P","wish A good luck","A에게 행운을 빌어주다","A를 비난하다","A에게 사과하다","A를 부러워하다"],
+      ["C","Good luck on your test!","시험 잘 봐! (행운을 빌어!)","운이 좋았네!","조심해!","수고했어!"],
+
+      // 세트 66: job (직업/일 -> 일을 잘 해내다 -> 잘했어! 계속 그렇게 해!)
+      ["W","job","직업/일","휴식","취미","놀이"],
+      ["P","do a good job","일을 잘 해내다","실수하다","게으름 피우다","포기하다"],
+      ["C","Good job! Keep it up!","잘했어! 계속 그렇게 해!","좋은 직장이네!","일하러 가자!","다시 해봐!"],
+
+      // 세트 67: turn (차례 -> ~의 차례 -> 이제 내 차례야)
+      ["W","turn","차례/순서","반칙","휴식","끝"],
+      ["P","one's turn","~의 차례","동시에","갑자기","혼자서"],
+      ["C","It's my turn now.","이제 내 차례야.","내가 돌릴게.","네 차례야.","순서가 바뀌었어."],
+
+      // 세트 68: first (첫 번째의 -> 처음에는 -> 처음에는 영어가 어려웠어)
+      ["W","first","첫 번째의","마지막의","중간의","다음의"],
+      ["P","at first","처음에는","마침내","갑자기","나중에"],
+      ["C","At first, English was difficult.","처음에는 영어가 어려웠어.","여성 먼저 하세요.","어린이 먼저 하세요.","손님 먼저 하세요."],
+
+      // 세트 69: after (~후에 -> ~을 돌보다 -> 내 강아지 좀 돌봐줄 수 있니?)
+      ["W","after","~후에","~전에","~동안에","~대신에"],
+      ["P","look after","~을 돌보다","~을 닮다","~을 뒤쫓다","~을 찾다"],
+      ["C","Can you look after my dog?","내 강아지 좀 돌봐줄 수 있니?","먼저 가세요.","당신 뒤에 갈게요.","당신 때문이에요."],
+
+      // 세트 70: watch (지켜보다/손목시계 -> 조심하다 -> 조심해! 차가 오고 있어!)
+      ["W","watch","지켜보다/손목시계","눈감다","무시하다","달력"],
+      ["P","watch out","조심하다/경계하다","밖을 보다","시계를 보다","잠들다"],
+      ["C","Watch out! A car is coming!","조심해! 차가 오고 있어!","밖을 봐!","시계를 봐!","지켜봐!"],
+
+      // 세트 71: careful (조심성 있는 -> ~을 조심하다 -> 집에 가는 길 조심해)
+      ["W","careful","조심성 있는","부주의한","급한","용감한"],
+      ["P","be careful of","~을 조심하다","~을 무시하다","~을 좋아하다","~을 잊다"],
+      ["C","Be careful on your way home.","집에 가는 길 조심해.","집에 빨리 가.","조용히 해.","서둘러."],
+
+      // 세트 72: slow (느린 -> 속도를 줄이다 -> 속도를 좀 줄여 주세요)
+      ["W","slow","느린","빠른","급한","높은"],
+      ["P","slow down","속도를 줄이다","속도를 높이다","멈추다","출발하다"],
+      ["C","Slow down, please.","속도를 좀 줄여 주세요.","빨리 가주세요.","아래로 내려가세요.","멈춰주세요."],
+
+      // 세트 73: hold (잡다/기다리다 -> 잠깐 기다리다 -> 잠깐만 기다려 주세요)
+      ["W","hold","잡다/유지하다","놓다","던지다","밀다"],
+      ["P","hold on","잠깐 기다리다 / 꽉 잡다","전화를 끊다","포기하다","놓아주다"],
+      ["C","Hold on a second, please.","잠깐만 기다려 주세요.","꽉 잡으세요.","전화를 끊으세요.","계속 말씀하세요."],
+
+      // 세트 74: moment (순간 -> 잠깐 동안 -> 잠시만 기다려 주세요)
+      ["W","moment","순간/잠시","영원","하루","일 년"],
+      ["P","for a moment","잠깐 동안","영원히","하루 종일","절대"],
+      ["C","Just a moment, please.","잠시만 기다려 주세요.","단 한 순간뿐이에요.","지금 당장이요.","시간 없어요."],
+
+      // 세트 75: almost (거의 -> 거의 매일 -> 거의 다 왔어)
+      ["W","almost","거의","전혀","완전히","겨우"],
+      ["P","almost every day","거의 매일","일 년에 한 번","전혀 ~않는","가끔"],
+      ["C","I'm almost there.","거의 다 왔어.","나는 거기에 있어.","아직 멀었어.","방금 출발했어."],
+
+      // 세트 76: home (집 -> 집에 / 편안한 -> 내 집처럼 편히 계세요)
+      ["W","home","집/가정","학교","회사","병원"],
+      ["P","at home","집에 / 편안한","외출 중인","불편한","바쁜"],
+      ["C","Make yourself at home.","편하게 계세요 (내 집처럼 편히 있어).","집을 직접 만드세요.","집에 가세요.","청소 좀 하세요."],
+
+      // 세트 77: safe (안전한 -> 안전하고 무사한 -> 안전한 여행 되세요!)
+      ["W","safe","안전한","위험한","불안한","무서운"],
+      ["P","safe and sound","안전하고 무사한","위험에 처한","다친","길을 잃은"],
+      ["C","Have a safe trip!","안전한 여행 되세요! (잘 다녀와!)","조심해서 운전해!","여행이 어땠어?","어디로 여행 가니?"],
+
+      // 세트 78: usual (보통의/평소의 -> 평소처럼 -> 늘 똑같지 뭐)
+      ["W","usual","보통의/평소의","특별한","이상한","새로운"],
+      ["P","as usual","평소처럼/늘 그렇듯이","갑자기","특별히","처음으로"],
+      ["C","Same as usual.","늘 똑같지 뭐 (평소와 같아).","완전히 달랐어.","정말 특별했어.","최악이었어."],
+
+      // 세트 79: do (하다 -> 최선을 다하다 -> 나는 최선을 다할 거야)
+      ["W","do","하다","멈추다","쉬다","자다"],
+      ["P","do one's best","최선을 다하다","대충 하다","포기하다","게으름 피우다"],
+      ["C","I will do my best!","나는 최선을 다할 거야!","직업이 무엇인가요?","무엇을 만들었나요?","어떻게 하나요?"],
+
+      // 세트 80: bad (나쁜 -> ~에 서투르다 -> 나쁘지 않아!)
+      ["W","bad","나쁜","좋은","훌륭한","멋진"],
+      ["P","be bad at","~에 서투르다 (못하다)","~을 잘하다","~에 좋다","~에 익숙하다"],
+      ["C","Not bad!","나쁘지 않아! (그럭저럭 괜찮아!)","매우 나빠!","정말 훌륭해!","전혀 아니야!"],
+
+      // 세트 81: tired (피곤한 -> ~에 싫증 나다 -> 오늘 너무 피곤해)
+      ["W","tired","피곤한","신나는","활기찬","건강한"],
+      ["P","be tired of","~에 싫증 나다/지겹다","~을 매우 좋아하다","~에 기대하다","~을 새로 시작하다"],
+      ["C","I'm so tired today.","오늘 너무 피곤해.","오늘 너무 신나.","배가 고파.","화가 났어."],
+
+      // 세트 82: sleepy (졸린 -> 잠들다 -> 너무 졸려서 공부를 못 하겠어)
+      ["W","sleepy","졸린","배고픈","목마른","심심한"],
+      ["P","fall asleep","잠들다","잠에서 깨다","일어나다","산책하다"],
+      ["C","I'm too sleepy to study.","너무 졸려서 공부를 못 하겠어.","공부할 시간이야.","잠이 다 깼어.","배고파서 못 하겠어."],
+
+      // 세트 83: bored (지루해하는 -> ~에 지루해하다 -> 심심해 죽겠어)
+      ["W","bored","지루해하는","신난","무서운","바쁜"],
+      ["P","be bored with","~에 지루해하다","~에 흥분하다","~을 즐기다","~에 놀라다"],
+      ["C","I'm bored to death.","심심해 죽겠어.","재미있어 죽겠어.","무서워 죽겠어.","바빠 죽겠어."],
+
+      // 세트 84: shy (부끄러워하는 -> 부끄러움을 느끼다 -> 부끄러워하지 마!)
+      ["W","shy","부끄러워하는","용감한","뻔뻔한","화난"],
+      ["P","feel shy","부끄러움을 느끼다","자신감을 갖다","화내다","웃다"],
+      ["C","Don't be shy!","부끄러워하지 마!","화내지 마!","울지 마!","거짓말하지 마!"],
+
+      // 세트 85: kid (아이/놀리다 -> 농담이야 -> 나랑 장난해?/농담이지?)
+      ["W","kid","아이/놀리다","어른","선생님","진지하다"],
+      ["P","just kidding","그냥 농담이야","진심이야","거짓말이야","화났어"],
+      ["C","Are you kidding me?","나랑 장난해? (농담이지?)","너는 아이니?","나를 속였니?","정말 진심이야?"],
+
+      // 세트 86: guess (추측하다 -> 있잖아/맞혀봐 -> 그런 것 같아)
+      ["W","guess","추측하다","확신하다","모르다","잊다"],
+      ["P","guess what","있잖아 (무슨 일인지 맞혀봐)","아무것도 아니야","잊어버려","몰라"],
+      ["C","I guess so.","그런 것 같아.","전혀 그렇지 않아.","확신해.","모르겠어."],
+
+      // 세트 87: hope (희망 -> 그러길 바라다 -> 나도 그러길 바라)
+      ["W","hope","희망/바라다","절망","걱정","후회"],
+      ["P","hope so","그러길 바라다","포기하다","두려워하다","후회하다"],
+      ["C","I hope so.","나도 그러길 바라.","나는 그렇게 생각 안 해.","절대 안 돼.","이미 그랬어."],
+
+      // 세트 88: pity (유감/동정 -> ~을 불쌍히 여기다 -> 안됐구나/유감이네)
+      ["W","pity","유감/동정","기쁨","축하","행운"],
+      ["P","take pity on","~을 불쌍히 여기다","~을 비난하다","~을 부러워하다","~을 무시하다"],
+      ["C","That's a pity.","안됐구나 / 유감이네.","정말 다행이다.","축하할 일이네.","재미있네."],
+
+      // 세트 89: shame (부끄러움/아쉬움 -> 부끄러운 줄 알다 -> 정말 아쉽다/안됐네!)
+      ["W","shame","부끄러움/아쉬움","자랑","기쁨","행운"],
+      ["P","put A to shame","A를 무색하게 만들다","A를 칭찬하다","A를 돕다","A를 위로하다"],
+      ["C","What a shame!","정말 아쉽다 / 안됐네!","정말 자랑스럽다!","대단하다!","행운이다!"],
+
+      // 세트 90: nice (좋은/멋진 -> ~에게 친절하게 대하다 -> 정말 친절하시네요!)
+      ["W","nice","좋은/멋진","나쁜","못생긴","불친절한"],
+      ["P","be nice to","~에게 친절하게 대하다","~에게 화내다","~을 무시하다","~와 싸우다"],
+      ["C","How nice of you!","정말 친절하시네요! (고마워요!)","정말 끔찍하다!","얼마나 비싸니?","무슨 일이니?"],
+
+      // 세트 91: thank (감사하다 -> ~ 덕분에 -> 네 도움 덕분에 시험에 합격했어)
+      ["W","thank","감사하다","사과하다","비난하다","거절하다"],
+      ["P","thanks to","~ 덕분에","~ 때문에(부정적)","~에도 불구하고","~ 없이"],
+      ["C","Thanks to you, I passed the test.","네 덕분에 시험에 합격했어.","그렇게 말해줘서 고마워.","그런 말 하지 마.","믿을 수 없어."],
+
+      // 세트 92: call (부르다/전화하다 -> 취소하다 -> 비 때문에 경기를 취소했어)
+      ["W","call","부르다/전화하다","끊다","문자하다","찾아가다"],
+      ["P","call off","취소하다","시작하다","연기하다","계속하다"],
+      ["C","They called off the game due to rain.","비 때문에 경기를 취소했어.","언제든지 전화해.","지금 전화해.","문자로 해."],
+
+      // 세트 93: number (숫자/번호 -> 수많은 -> 전화 잘못 거셨습니다)
+      ["W","number","숫자/번호","글자","그림","이름"],
+      ["P","a number of","많은 (수많은)","적은","하나의","전혀 없는"],
+      ["C","You have the wrong number.","전화 잘못 거셨습니다.","번호가 맞습니다.","통화 중입니다.","전원이 꺼져 있습니다."],
+
+      // 세트 94: practice (연습 -> 실천에 옮기다 -> 연습이 완벽을 만든다)
+      ["W","practice","연습/실천","포기","휴식","이론"],
+      ["P","put into practice","실천에 옮기다","포기하다","미루다","계획만 세우다"],
+      ["C","Practice makes perfect.","연습이 완벽을 만든다.","연습은 필요 없다.","완벽한 사람은 없다.","실수는 누구나 한다."],
+
+      // 세트 95: fly (날다 -> 날아가다 -> 시간이 정말 빠르다!)
+      ["W","fly","날다","걷다","수영하다","기어가다"],
+      ["P","fly away","날아가다","돌아오다","착륙하다","가라앉다"],
+      ["C","Time flies!","시간이 정말 빠르다!","시간이 멈췄다!","비행기가 날아간다!","시간이 남는다!"],
+
+      // 세트 96: mention (언급하다 -> ~은 말할 것도 없이 -> 천만에요/별말씀을요)
+      ["W","mention","언급하다/말하다","숨기다","잊다","침묵하다"],
+      ["P","not to mention","~은 말할 것도 없이","~을 제외하고","~대신에","~때문에"],
+      ["C","Don't mention it.","천만에요 (별말씀을요).","절대 말하지 마.","비밀을 지켜.","다시 언급해."],
+
+      // 세트 97: tomorrow (내일 -> 내일까지 -> 내일 봐!)
+      ["W","tomorrow","내일","어제","오늘","지난주"],
+      ["P","by tomorrow","내일까지","어제부터","오늘 아침에","영원히"],
+      ["C","See you tomorrow!","내일 봐!","어제 봤어!","다음 주에 봐!","잘 자!"],
+
+      // 세트 98: dream (꿈 -> ~을 꿈꾸다 -> 세계 여행을 꿈꾸고 있어)
+      ["W","dream","꿈/꿈꾸다","현실","악몽","기억"],
+      ["P","dream of","~을 꿈꾸다","~을 두려워하다","~을 포기하다","~을 잊다"],
+      ["C","I dream of traveling the world.","나는 세계 여행을 꿈꾸고 있어.","좋은 꿈 꿔!","일찍 일어나!","숙제 다 했니?"],
+
+      // 세트 99: buy (사다 -> ~을 다 사들이다 -> 이걸로 살게요!)
+      ["W","buy","사다","팔다","빌리다","훔치다"],
+      ["P","buy up","~을 다 사들이다","~을 팔아치우다","~을 환불하다","~을 버리다"],
+      ["C","I'll buy it! (I'll take it!)","이걸로 살게요!","안 살래요!","얼마예요?","환불해 주세요!"],
+
+      // 세트 100: price (가격 -> 반값에 -> 반값에 샀어요!)
+      ["W","price","가격","무게","크기","색깔"],
+      ["P","at half price","반값에 (50% 할인)","원가에","비싸게","공짜로"],
+      ["C","I bought this coat at half price!","이 코트를 반값에 샀어요!","이거 몇 개예요?","어디서 샀어요?","더 싼 거 있나요?"],
+
+      // 세트 101: size (크기/사이즈 -> 크기순으로 -> 더 큰 사이즈 있나요?)
+      ["W","size","크기/사이즈","무게","색깔","가격"],
+      ["P","by size","크기순으로","색깔별로","가격순으로","이름순으로"],
+      ["C","Do you have a bigger size?","더 큰 사이즈 있나요?","더 작은 사이즈 있나요?","다른 색깔 있나요?","더 싼 거 있나요?"],
+
+      // 세트 102: change (변화/잔돈 -> ~으로 갈아입다 -> 마른 옷으로 갈아입어야 해)
+      ["W","change","변화/잔돈","유지","지폐","카드"],
+      ["P","change into","~으로 갈아입다 / 변하다","~을 벗다","~을 유지하다","~을 버리다"],
+      ["C","I need to change into dry clothes.","마른 옷으로 갈아입어야 해.","잔돈은 가지세요.","거스름돈이 틀렸어요.","카드로 계산할게요."],
+
+      // 세트 103: hungry (배고픈 -> 배가 고파지다 -> 배고파 죽겠어)
+      ["W","hungry","배고픈","배부른","목마른","졸린"],
+      ["P","get hungry","배가 고파지다","배가 불러지다","목이 말라지다","잠이 오다"],
+      ["C","I'm so hungry I could eat a horse.","배고파 죽겠어 (말 한 마리도 먹겠어).","배불러 죽겠어.","목말라 죽겠어.","졸려 죽겠어."],
+
+      // 세트 104: eat (먹다 -> 외식하다 -> 오늘 밤에 외식하자)
+      ["W","eat","먹다","마시다","요리하다","굶다"],
+      ["P","eat out","외식하다","집에서 요리하다","배달시키다","굶다"],
+      ["C","Let's eat out tonight.","오늘 밤에 외식하자.","집에서 요리해 먹자.","배고프지 않아.","간식 먹자."],
+
+      // 세트 105: bill (계산서/지폐 -> 계산서를 치르다 -> 더치페이하자)
+      ["W","bill","계산서/지폐","동전","메뉴판","영수증"],
+      ["P","pay the bill","계산서를 치르다","주문하다","요리하다","돈을 빌리다"],
+      ["C","Let's split the bill.","더치페이하자 (계산서를 나누자).","내가 다 낼게.","계산서 좀 주세요.","공짜로 먹자."],
+
+      // 세트 106: meal (식사 -> 식사 중에 -> 맛있게 드세요!)
+      ["W","meal","식사","간식","음료","재료"],
+      ["P","during a meal","식사 중에","식사 전에","식사 후에","잠자는 동안"],
+      ["C","Enjoy your meal!","맛있게 드세요!","요리 잘하세요!","배부르게 드세요!","건강하세요!"],
+
+      // 세트 107: day (날/하루 -> 이틀에 한 번 -> 오늘 무슨 요일이에요?)
+      ["W","day","날/하루","밤","달","년"],
+      ["P","every other day","이틀에 한 번 (격일로)","매일","일주일에 한 번","한 달에 한 번"],
+      ["C","What day is it today?","오늘 무슨 요일이에요?","오늘 며칠이에요?","오늘 날씨 어때요?","오늘 무슨 날이에요?"],
+
+      // 세트 108: date (날짜/데이트 -> 최신의 -> 오늘 며칠이에요?)
+      ["W","date","날짜/데이트","요일","시간","계절"],
+      ["P","up to date","최신의","구식의","오래된","고장 난"],
+      ["C","What's the date today?","오늘 며칠이에요?","오늘 무슨 요일이에요?","몇 시에 만나요?","생일이 언제예요?"],
+
+      // 세트 109: weather (날씨 -> 몸이 좀 안 좋은 -> 오늘 날씨 어때요?)
+      ["W","weather","날씨","계절","온도","기분"],
+      ["P","under the weather","몸이 좀 안 좋은 / 기분이 가라앉은","매우 건강한","날씨가 맑은","기분이 최고인"],
+      ["C","How's the weather today?","오늘 날씨 어때요?","기분이 어때요?","음식이 어때요?","어떻게 지내요?"],
+
+      // 세트 110: rain (비 -> 비가 억수같이 쏟아지다 -> 비가 억수같이 쏟아진다)
+      ["W","rain","비","눈","바람","구름"],
+      ["P","rain cats and dogs","비가 억수같이 쏟아지다","눈이 펑펑 내리다","날씨가 개다","바람이 불다"],
+      ["C","It's raining cats and dogs.","비가 억수같이 쏟아진다.","고양이와 개가 싸운다.","날씨가 매우 맑다.","눈이 펑펑 내린다."],
+
+      // 세트 111: cold (추운/감기 -> 감기에 걸리다 -> 감기에 걸린 것 같아)
+      ["W","cold","추운/감기","더운","따뜻한","시원한"],
+      ["P","catch a cold","감기에 걸리다","감기가 낫다","열을 재다","약을 먹다"],
+      ["C","I think I caught a cold.","나 감기에 걸린 것 같아.","오늘 너무 덥다!","날씨가 따뜻하다!","감기 다 나았어!"],
+
+      // 세트 112: straight (똑바로/직진의 -> 직진하다 -> 두 블록 직진하세요)
+      ["W","straight","똑바로/직진의","구부러진","뒤로","옆으로"],
+      ["P","go straight","직진하다","좌회전하다","우회전하다","유턴하다"],
+      ["C","Go straight two blocks.","두 블록 직진하세요.","두 블록 뒤로 가세요.","오른쪽으로 도세요.","길을 건너세요."],
+
+      // 세트 113: miss (놓치다/그리워하다 -> 버스를 놓치다 -> 서둘러, 안 그러면 버스를 놓칠 거야!)
+      ["W","miss","놓치다/그리워하다","잡다","찾다","만나다"],
+      ["P","miss the bus","버스를 놓치다","버스를 타다","버스에서 내리다","버스를 기다리다"],
+      ["C","Hurry up, or we'll miss the bus!","서둘러, 안 그러면 버스를 놓칠 거야!","절대 놓치지 마세요.","찾기 어려울 거예요.","길을 잃을 거예요."],
+
+      // 세트 114: minute (분/잠깐 -> 잠깐 기다리다 -> 약 10분 정도 걸려요)
+      ["W","minute","분/잠깐","시간","초","하루"],
+      ["P","wait a minute","잠깐 기다리다","서두르다","떠나다","잊어버리다"],
+      ["C","It takes about 10 minutes.","약 10분 정도 걸려요.","10시 10분이에요.","10분 늦었어요.","10분 남았어요."],
+
+      // 세트 115: headache (두통 -> 머리가 아프다 -> 머리가 지끈지끈 너무 아파요)
+      ["W","headache","두통","복통","치통","감기"],
+      ["P","have a headache","머리가 아프다","배가 아프다","이가 아프다","열이 나다"],
+      ["C","I have a terrible headache.","머리가 지끈지끈 너무 아파요.","배가 너무 아파요.","이가 아파요.","목이 아파요."],
+
+      // 세트 116: stomachache (복통 -> 배가 아프다 -> 배가 아파요)
+      ["W","stomachache","복통","두통","치통","기침"],
+      ["P","have a stomachache","배가 아프다","머리가 아프다","허리가 아프다","열이 나다"],
+      ["C","I have a stomachache.","배가 아파요.","머리가 아파요.","허리가 아파요.","열이 나요."],
+
+      // 세트 117: front (앞 -> ~의 앞에 -> 학교 앞에서 만나자)
+      ["W","front","앞","뒤","옆","위"],
+      ["P","in front of","~의 앞에","~의 뒤에","~의 옆에","~의 아래에"],
+      ["C","Meet me in front of the school.","학교 앞에서 만나자.","학교 뒤에서 만나자.","학교 안에 있어.","학교에 늦었어."],
+
+      // 세트 118: next (다음의/옆의 -> ~의 옆에 -> 은행은 우체국 옆에 있어요)
+      ["W","next","다음의/옆의","이전의","마지막의","멀리 있는"],
+      ["P","next to","~의 옆에","~의 맞은편에","~의 안에","~에서 멀리"],
+      ["C","The bank is next to the post office.","은행은 우체국 옆에 있어요.","은행은 우체국 맞은편에 있어요.","우체국이 어디예요?","다음에 가요."],
+
+      // 세트 119: across (가로질러 -> ~의 맞은편에 -> 카페는 역 맞은편에 있어요)
+      ["W","across","가로질러/건너편에","따라가며","안쪽으로","뒤쪽으로"],
+      ["P","across from","~의 맞은편에","~의 옆에","~의 위에","~의 뒤에"],
+      ["C","The cafe is across from the station.","카페는 역 맞은편에 있어요.","카페는 역 안에 있어요.","역을 지나쳤어요.","카페가 문을 닫았어요."],
+
+      // 세트 120: instead (대신에 -> ~ 대신에 -> 버스 타는 대신에 걸어가자)
+      ["W","instead","대신에","함께","때문에","항상"],
+      ["P","instead of","~ 대신에","~ 때문에","~와 함께","~에도 불구하고"],
+      ["C","Let's walk instead of taking a bus.","버스 타는 대신에 걸어가자.","버스 타고 가자.","걸어가기 싫어.","버스를 놓쳤어."],
+
+      // 세트 121: because (왜냐하면 -> ~ 때문에 -> 비 때문에 소풍을 취소했어)
+      ["W","because","왜냐하면","그러나","그래서","만약"],
+      ["P","because of","~ 때문에","~ 덕분에","~ 대신에","~와 상관없이"],
+      ["C","We canceled the picnic because of rain.","비 때문에 소풍을 취소했어.","비가 와서 소풍을 갔어.","날씨가 맑았어.","소풍이 재미있었어."],
+
+      // 세트 122: soon (곧 -> ~하자마자 -> 집에 도착하자마자 전화할게)
+      ["W","soon","곧/머지않아","늦게","오래전에","절대"],
+      ["P","as soon as","~하자마자","~하기 전에","~하는 동안","~할 때까지"],
+      ["C","I'll call you as soon as I get home.","집에 도착하자마자 전화할게.","오랜만이야!","나중에 연락해!","조심해서 가!"],
+
+      // 세트 123: other (다른 -> 서로 -> 우리는 서로 도와야 해)
+      ["W","other","다른","같은","혼자의","모든"],
+      ["P","each other","서로","혼자서","각자","모두"],
+      ["C","We should help each other.","우리는 서로 도와야 해.","혼자서 해야 해.","다른 사람에게 부탁해.","도움이 필요 없어."],
+
+      // 세트 124: foot (발 -> 걸어서 -> 나는 걸어서 학교에 가)
+      ["W","foot","발","손","머리","다리"],
+      ["P","on foot","걸어서","버스로","자전거로","비행기로"],
+      ["C","I go to school on foot.","나는 걸어서 학교에 가.","나는 버스로 학교에 가.","발이 아파.","학교가 너무 멀어."],
+
+      // 세트 125: trouble (곤경/문제 -> 곤경에 처한 -> 나 큰일 났어!)
+      ["W","trouble","곤경/문제","행운","해결","기쁨"],
+      ["P","in trouble","곤경에 처한","안전한","행복한","운이 좋은"],
+      ["C","I'm in big trouble!","나 큰일 났어! (곤경에 처했어!)","아무 문제없어!","정말 다행이야!","도와줘서 고마워!"],
+
+      // 세트 126: order (순서/주문 -> 고장 난 -> 엘리베이터가 고장 났어요)
+      ["W","order","순서/주문","혼란","취소","환불"],
+      ["P","out of order","고장 난","정상 작동하는","새것인","정돈된"],
+      ["C","The elevator is out of order.","엘리베이터가 고장 났어요.","엘리베이터가 작동해요.","주문하시겠어요?","순서대로 줄 서세요."],
+
+      // 세트 127: step (걸음/단계 -> 단계적으로/차근차근 -> 차근차근 배워보자)
+      ["W","step","걸음/단계","점프","달리기","휴식"],
+      ["P","step by step","단계적으로/차근차근","한꺼번에","갑자기","대충"],
+      ["C","Let's learn English step by step.","영어를 단계적으로 차근차근 배워보자.","발밑 조심하세요!","빨리 걸으세요!","뒤로 물러서세요!"],
+
+      // 세트 128: face (얼굴/직면하다 -> 마주 보고 -> 우리 직접 얼굴 보고 이야기하자)
+      ["W","face","얼굴/직면하다","등","피하다","숨다"],
+      ["P","face to face","마주 보고/대면하여","전화상으로","온라인으로","등지고"],
+      ["C","Let's talk face to face.","우리 직접 얼굴 보고 이야기하자.","전화로 이야기하자.","문자 보내줘.","나중에 얘기하자."],
+
+      // 세트 129: belong (~에 속하다 -> ~의 것이다 -> 이 책은 내 거야)
+      ["W","belong","~에 속하다","버리다","떠나다","빌리다"],
+      ["P","belong to","~에 속하다/~의 것이다","~을 버리다","~에서 벗어나다","~을 빌리다"],
+      ["C","This book belongs to me.","이 책은 내 거야.","이 책은 네 거야.","책을 잃어버렸어.","책을 빌려줄게."],
+
+      // 세트 130: arrive (도착하다 -> ~에 도착하다 -> 공항에 언제 도착하나요?)
+      ["W","arrive","도착하다","출발하다","떠나다","지나치다"],
+      ["P","arrive at","~에 도착하다","~에서 출발하다","~을 지나치다","~을 떠나다"],
+      ["C","When will we arrive at the airport?","공항에 언제 도착하나요?","공항에서 언제 출발하나요?","공항이 어디예요?","비행기를 놓쳤어요."],
+
+      // 세트 131: listen (듣다 -> ~을 귀 기울여 듣다 -> 내 말을 주의 깊게 들어봐)
+      ["W","listen","듣다","말하다","보다","읽다"],
+      ["P","listen to","~을 귀 기울여 듣다","~에게 말하다","~을 무시하다","~을 보다"],
+      ["C","Listen to me carefully.","내 말을 주의 깊게 들어봐.","말하지 마.","음악을 듣고 있어.","안 들려요."],
+
+      // 세트 132: ask (묻다/요청하다 -> ~을 요청하다 -> 도움을 요청해도 될까요?)
+      ["W","ask","묻다/요청하다","대답하다","거절하다","명령하다"],
+      ["P","ask for","~을 요청하다","~을 거절하다","~을 제공하다","~을 숨기다"],
+      ["C","May I ask for your help?","당신의 도움을 요청해도 될까요?","대답해 주실래요?","질문이 있어요.","무슨 뜻인가요?"],
+
+      // 세트 133: pay (지불하다 -> ~의 값을 치르다 -> 오늘 저녁 식사 값은 내가 낼게)
+      ["W","pay","지불하다","저축하다","빌리다","환불받다"],
+      ["P","pay for","~의 값을 치르다","~을 공짜로 얻다","~을 환불하다","~을 훔치다"],
+      ["C","I'll pay for dinner tonight.","오늘 저녁 식사 값은 내가 낼게.","각자 내자.","카드로 계산할게요.","너무 비싸요."],
+
+      // 세트 134: prepare (준비하다 -> ~을 준비하다 -> 나는 시험을 준비하고 있어)
+      ["W","prepare","준비하다","포기하다","망치다","미루다"],
+      ["P","prepare for","~을 준비하다","~을 포기하다","~을 망치다","~을 미루다"],
+      ["C","I'm preparing for the exam.","나는 시험을 준비하고 있어.","시험이 끝났어.","시험을 망쳤어.","준비할 시간이 없어."],
+
+      // 세트 135: search (수색하다/찾다 -> ~을 수색하다/찾다 -> 내 열쇠를 찾고 있어)
+      ["W","search","수색하다/찾다","숨기다","버리다","놓치다"],
+      ["P","search for","~을 수색하다/찾다","~을 숨기다","~을 버리다","~을 놓치다"],
+      ["C","I'm searching for my keys.","내 열쇠를 찾고 있어.","열쇠를 찾았어.","열쇠를 잃어버렸어.","문을 잠갔어."],
+
+      // 세트 136: talk (이야기하다 -> ~에 대해 이야기하다 -> 우리 계획에 대해 이야기하자)
+      ["W","talk","이야기하다","침묵하다","듣다","쓰다"],
+      ["P","talk about","~에 대해 이야기하다","~에 대해 침묵하다","~을 비밀로 하다","~을 잊다"],
+      ["C","Let's talk about our plan.","우리 계획에 대해 이야기하자.","말 걸지 마!","다시 말해줄래?","듣고 있어."],
+
+      // 세트 137: remind (상기시키다 -> A에게 B를 상기시키다 -> 너를 보면 내 남동생이 떠올라)
+      ["W","remind","상기시키다","잊게 하다","속이다","착각하다"],
+      ["P","remind A of B","A에게 B를 상기시키다","A에게 B를 잊게 하다","A와 B를 비교하다","A에서 B를 빼앗다"],
+      ["C","You remind me of my brother.","너를 보면 내 남동생이 떠올라.","내 남동생을 소개해 줄게.","우리는 닮지 않았어.","이름을 잊어버렸어."],
+
+      // 세트 138: along (따라서 -> ~와 잘 지내다 -> 반 친구들과 잘 지내니?)
+      ["W","along","따라서/함께","반대로","따로","혼자"],
+      ["P","get along with","~와 잘 지내다","~와 다투다","~을 멀리하다","~을 싫어하다"],
+      ["C","Do you get along with your classmates?","반 친구들과 잘 지내니?","반 친구들이 몇 명이니?","친구와 싸웠니?","혼자 지내니?"],
+
+      // 세트 139: surprise (놀라움 -> ~에 놀라다 -> 그 소식을 듣고 깜짝 놀랐어)
+      ["W","surprise","놀라움","지루함","실망","걱정"],
+      ["P","be surprised at","~에 놀라다","~에 실망하다","~을 당연하게 여기다","~을 무서워하다"],
+      ["C","I was surprised at the news.","그 소식을 듣고 깜짝 놀랐어.","정말 실망이야!","전혀 놀랍지 않아!","무서워 죽겠어!"],
+
+      // 세트 140: disappoint (실망시키다 -> ~에 실망하다 -> 그 영화에 실망했어)
+      ["W","disappoint","실망시키다","만족시키다","기쁘게 하다","자랑하다"],
+      ["P","be disappointed with","~에 실망하다","~에 만족하다","~을 자랑스러워하다","~에 감사하다"],
+      ["C","I was disappointed with the movie.","나는 그 영화에 실망했어.","실망시키지 않을게요.","만족스러워요.","포기하지 마세요."],
+
+      // 세트 141: satisfy (만족시키다 -> ~에 만족하다 -> 그 결과에 만족해)
+      ["W","satisfy","만족시키다","실망시키다","화나게 하다","부족하다"],
+      ["P","be satisfied with","~에 만족하다","~에 불만을 갖다","~을 포기하다","~을 부러워하다"],
+      ["C","I'm satisfied with the result.","그 결과에 만족해.","결과가 실망스러워.","다시 해보고 싶어.","아직 결과가 안 나왔어."],
+
+      // 세트 142: crowd (군중/붐비다 -> ~으로 붐비다 -> 지하철이 사람들로 너무 붐벼요)
+      ["W","crowd","군중/붐비다","빈 공간","조용함","한적함"],
+      ["P","be crowded with","~으로 붐비다","~이 텅 비다","~이 조용하다","~이 깨끗하다"],
+      ["C","The subway is crowded with people.","지하철이 사람들로 붐벼요.","지하철이 텅 비었어요.","지하철역이 어디예요?","버스를 타자."],
+
+      // 세트 143: cover (덮다 -> ~으로 덮여 있다 -> 산이 눈으로 덮여 있어요)
+      ["W","cover","덮다/가리다","드러내다","열다","치우다"],
+      ["P","be covered with","~으로 덮여 있다","~이 드러나다","~이 비어 있다","~을 치우다"],
+      ["C","The mountain is covered with snow.","산이 눈으로 덮여 있어요.","산에 눈이 다 녹았어요.","눈이 오고 있어요.","산에 올라가자."],
+
+      // 세트 144: succeed (성공하다 -> ~에 성공하다 -> 그는 시험에 합격하는 데 성공했어)
+      ["W","succeed","성공하다","실패하다","포기하다","망치다"],
+      ["P","succeed in","~에 성공하다","~에 실패하다","~을 포기하다","~을 망치다"],
+      ["C","He succeeded in passing the exam.","그는 시험에 합격하는 데 성공했어.","실패할까 봐 걱정돼.","포기하지 마.","정말 대단해."],
+
+      // 세트 145: fill (채우다 -> 빈칸을 채우다 -> 이 양식의 빈칸을 채워주세요)
+      ["W","fill","채우다","비우다","지우다","쏟다"],
+      ["P","fill in","(빈칸을) 채우다","지우다","비우다","찢다"],
+      ["C","Please fill in this form.","이 양식을 작성해 주세요 (빈칸을 채워주세요).","이 종이를 버려주세요.","가득 채워주세요.","이름이 뭐예요?"],
+
+      // 세트 146: hand (손/건네주다 -> 제출하다 -> 숙제를 제출해 주세요)
+      ["W","hand","손/건네주다","발","받다","숨기다"],
+      ["P","hand in","제출하다","돌려받다","숨기다","버리다"],
+      ["C","Please hand in your homework.","숙제를 제출해 주세요.","숙제를 다 못 했어요.","손을 들어 주세요.","여기에 있어요."],
+
+      // 세트 147: show (보여주다 -> 나타나다 -> 그는 오늘 나타나지 않았어)
+      ["W","show","보여주다","숨기다","가리다","보다"],
+      ["P","show up","나타나다","사라지다","숨다","결석하다"],
+      ["C","He didn't show up today.","그는 오늘 나타나지 않았어 (안 왔어).","그는 일찍 왔어.","나 좀 보여줘.","멋진 쇼였어."],
+
+      // 세트 148: stay (머무르다 -> 늦게까지 깨어 있다 -> 너무 늦게까지 깨어 있지 마)
+      ["W","stay","머무르다","떠나다","이사하다","출발하다"],
+      ["P","stay up","늦게까지 안 자고 깨어 있다","일찍 잠들다","낮잠 자다","일어나다"],
+      ["C","Don't stay up too late.","너무 늦게까지 깨어 있지 마 (일찍 자).","일찍 일어나.","여기에 머물러.","집에 가자."],
+
+      // 세트 149: diary (일기 -> 일기를 쓰다 -> 나는 영어로 일기를 써)
+      ["W","diary","일기","소설","신문","편지"],
+      ["P","keep a diary","일기를 쓰다","비밀을 지키다","약속을 어기다","책을 읽다"],
+      ["C","I keep a diary in English.","나는 영어로 일기를 써.","나는 매일 책을 읽어.","일기장을 잃어버렸어.","비밀을 말해줄게."],
+
+      // 세트 150: promise (약속 -> 약속을 지키다 -> 나는 항상 약속을 지켜)
+      ["W","promise","약속","거짓말","실수","변명"],
+      ["P","keep a promise","약속을 지키다","약속을 어기다","거짓말하다","비밀을 말하다"],
+      ["C","You should always keep a promise.","항상 약속을 지켜야 해.","약속을 어겨서 미안해.","거짓말하지 마.","내일 만나자."],
+
+      // 세트 151: lie (거짓말/눕다 -> 거짓말하다 -> 나한테 거짓말하지 마)
+      ["W","lie","거짓말/눕다","진실","서다","앉다"],
+      ["P","tell a lie","거짓말하다","진실을 말하다","사과하다","칭찬하다"],
+      ["C","Don't tell a lie to me.","나한테 거짓말하지 마.","진실을 말해줘.","누워 있어.","믿을 수 없어."],
+
+      // 세트 152: truth (진실 -> 진실을 말하다 -> 나에게 진실을 말해줘)
+      ["W","truth","진실","거짓","비밀","소문"],
+      ["P","tell the truth","진실을 말하다","거짓말하다","속이다","변명하다"],
+      ["C","Please tell me the truth.","나에게 진실을 말해줘.","거짓말하지 마.","진실이 무엇이니?","아무에게도 말하지 마."],
+
+      // 세트 153: catch (잡다 -> ~을 따라잡다 -> 밀린 공부를 따라잡아야 해)
+      ["W","catch","잡다","놓치다","던지다","떨어뜨리다"],
+      ["P","catch up with","~을 따라잡다","~에게 뒤처지다","~을 놓치다","~을 기다리다"],
+      ["C","I need to catch up with my study.","밀린 공부를 따라잡아야 해.","버스를 놓쳤어!","감기에 걸렸어!","빨리 뛰어!"],
+
+      // 세트 154: rid (제거하다 -> ~을 없애다 -> 오래된 쓰레기를 치워야 해)
+      ["W","rid","제거하다/없애다","모으다","가지다","사다"],
+      ["P","get rid of","~을 제거하다/없애다","~을 모으다","~을 보관하다","~을 사다"],
+      ["C","We need to get rid of old trash.","오래된 쓰레기를 치워야 해.","새것으로 사자.","버리지 마.","어디에 두었니?"],
+
+      // 세트 155: part (부분/역할 -> ~에 참여하다 -> 나는 그 게임에 참여하고 싶어)
+      ["W","part","부분/역할","전체","끝","시작"],
+      ["P","take part in","~에 참여하다","~을 구경하다","~에서 빠지다","~을 반대하다"],
+      ["C","I want to take part in the game.","나는 그 게임에 참여하고 싶어.","나는 구경만 할래.","내 역할이 뭐야?","게임이 끝났어."],
+
+      // 세트 156: place (장소/일어나다 -> 개최되다/일어나다 -> 콘서트가 어디에서 열리나요?)
+      ["W","place","장소","시간","사람","이유"],
+      ["P","take place","개최되다/일어나다","취소되다","미뤄지다","끝나다"],
+      ["C","Where will the concert take place?","콘서트가 어디에서 열리나요?","콘서트가 몇 시에 시작하나요?","콘서트가 취소되었어요.","자리가 어디예요?"],
+
+      // 세트 157: wonder (궁금해하다/경이로움 -> ~인 것도 당연하다 -> 어쩐지 네가 그렇게 피곤해 보이더라!)
+      ["W","wonder","궁금해하다/경이로움","확신하다","무시하다","잊다"],
+      ["P","no wonder","~인 것도 당연하다","믿을 수 없다","정말 이상하다","전혀 아니다"],
+      ["C","No wonder you're so tired!","어쩐지 네가 그렇게 피곤해 보이더라!","전혀 피곤해 보이지 않아!","왜 그렇게 피곤하니?","정말 궁금하다!"],
+
+      // 세트 158: welcome (환영하다 -> 자유롭게 ~해도 좋다 -> 우리와 함께해도 좋아요!)
+      ["W","welcome","환영하다","거절하다","쫓아내다","무시하다"],
+      ["P","be welcome to","자유롭게 ~해도 좋다","~해서는 안 된다","~하기 싫다","~을 거절하다"],
+      ["C","You are welcome to join us!","우리와 함께해도 좋아요!","집에 온 걸 환영해!","잘 가!","조심히 다녀와!"],
+
+      // 세트 159: clean (깨끗한/청소하다 -> 청소하다 -> 지금 당장 네 방 치워)
+      ["W","clean","깨끗한/청소하다","더러운","지저분한","오래된"],
+      ["P","clean up","청소하다/치우다","어지럽히다","더럽히다","망가뜨리다"],
+      ["C","Clean up your room right now.","지금 당장 네 방 치워.","방이 아주 깨끗하네.","청소 도와줄까?","밖에 나가자."],
+
+      // 세트 160: wake (깨우다 -> 잠에서 깨다 -> 일어나! 8시야!)
+      ["W","wake","깨우다","재우다","꿈꾸다","졸다"],
+      ["P","wake up","잠에서 깨다","잠들다","꿈꾸다","눕다"],
+      ["C","Wake up! It's 8 o'clock!","일어나! 8시야!","잘 자!","몇 시에 잤니?","아직 졸려."],
+
+      // 세트 161: grow (자라다/키우다 -> 자라다/성장하다 -> 커서 무엇이 되고 싶니?)
+      ["W","grow","자라다/키우다","줄어들다","멈추다","시들다"],
+      ["P","grow up","자라다/성장하다","늙다","작아지다","포기하다"],
+      ["C","What do you want to be when you grow up?","커서 무엇이 되고 싶니?","어릴 때 꿈이 뭐였니?","키가 많이 컸구나.","몇 살이니?"],
+
+      // 세트 162: work (일하다/작동하다 -> 운동하다/잘 풀리다 -> 모든 일이 다 잘 풀릴 거야)
+      ["W","work","일하다/작동하다","쉬다","놀다","고장 나다"],
+      ["P","work out","운동하다 / 잘 풀리다","게으름 피우다","실패하다","아프다"],
+      ["C","Everything will work out fine.","모든 일이 다 잘 풀릴 거야.","운동하러 가자.","컴퓨터가 작동 안 해.","일이 너무 많아."],
+
+      // 세트 163: run (달리다 -> ~이 다 떨어지다 -> 시간이 다 떨어져 가)
+      ["W","run","달리다","멈추다","걷다","앉다"],
+      ["P","run out of","~이 다 떨어지다","~이 남아돌다","~을 가득 채우다","~을 사다"],
+      ["C","We are running out of time.","시간이 다 떨어져 가 (시간이 없어).","시간이 많이 남았어.","빨리 뛰어!","우유가 다 떨어졌어."],
+
+      // 세트 164: pick (고르다/줍다 -> 줍다/데리러 가다 -> 6시에 너를 데리러 갈게)
+      ["W","pick","고르다/줍다","버리다","떨어뜨리다","놓다"],
+      ["P","pick up","줍다 / 차로 데리러 가다","떨어뜨리다","버리다","내려주다"],
+      ["C","I'll pick you up at 6.","6시에 너를 데리러 갈게.","6시에 만나자.","바닥에 떨어진 것 좀 주워줘.","아무거나 골라."],
+
+      // 세트 165: throw (던지다 -> 버리다 -> 네 기회를 날려버리지 마)
+      ["W","throw","던지다","받다","줍다","잡다"],
+      ["P","throw away","버리다","줍다","모으다","아끼다"],
+      ["C","Don't throw away your chance.","네 기회를 날려버리지 마 (포기하지 마).","쓰레기를 버려줘.","공을 던져줘.","잘 받았어."],
+
+      // 세트 166: famous (유명한 -> ~으로 유명하다 -> 한국은 무엇으로 유명한가요?)
+      ["W","famous","유명한","무명의","낯선","평범한"],
+      ["P","be famous for","~으로 유명하다","~으로 고통받다","~에 감사하다","~을 책임지다"],
+      ["C","What is Korea famous for?","한국은 무엇으로 유명한가요?","한국에 가본 적 있나요?","유명한 가수인가요?","어디에 있나요?"],
+
+      // 세트 167: example (예시 -> 예를 들어 -> 예를 하나 들어줄 수 있니?)
+      ["W","example","예시/본보기","질문","정답","비밀"],
+      ["P","for example","예를 들어","반면에","하지만","마침내"],
+      ["C","Can you give me an example?","예를 하나 들어줄 수 있니?","무슨 뜻인지 모르겠어.","정답이 뭐야?","다시 설명해 줘."]
+    ];
+
+    // 데이터 가공
+    const allQuestions = rawData.map((item, idx) => ({
+      id: idx + 1,
+      category: item[0],
+      question: item[1],
+      correctAnswer: item[2],
+      choices: [item[2], item[3], item[4], item[5]]
+    }));
+
+    let questionPool = [];
+    let currentQuestion = null;
+    let questionCount = 0;
+
+    let peer = null;
+    let connections = {};
+    let hostConn = null;
+    let myAnswer = null;
+    let myScore = 0;
+    let isRevealed = false;
+    let isDemoMode = false;
+    let bcChannel = null; // 동일 브라우저 탭 간 실시간 통신 채널
+
+    const categoryNames = {
+      "W": "📘 기초 영단어",
+      "P": "📙 필수 구문/숙어",
+      "C": "📗 실생활 영어 회화"
+    };
+
+    // 알림 토스트 메시지 출력 (alert 대체)
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2800);
+    }
+
+    // 배열 무작위 셔플
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // 출제 풀 초기화
+    function resetPool() {
+      const selectedCat = document.getElementById('category-select').value;
+      if (selectedCat === 'CHAIN') {
+        // 1단계(단어) -> 2단계(구문/숙어) -> 3단계(실생활 회화) 순서대로 묶음(3문제씩) 유지하되 세트 단위로 셔플
+        const sets = [];
+        for (let i = 0; i < allQuestions.length; i += 3) {
+          sets.push(allQuestions.slice(i, i + 3));
+        }
+        const shuffledSets = shuffle(sets);
+        // pop()으로 뒤에서부터 꺼내므로 각 세트 내 순서를 역순으로 넣어 [단어 -> 구문 -> 회화] 순으로 출제되게 구성
+        questionPool = [];
+        shuffledSets.forEach(group => {
+          for (let j = group.length - 1; j >= 0; j--) {
+            questionPool.push(group[j]);
+          }
+        });
+      } else {
+        let filtered = allQuestions;
+        if (selectedCat === 'WORD') filtered = allQuestions.filter(q => q.category === 'W');
+        else if (selectedCat === 'PHRASE') filtered = allQuestions.filter(q => q.category === 'P');
+        else if (selectedCat === 'CONV') filtered = allQuestions.filter(q => q.category === 'C');
+
+        questionPool = shuffle(filtered);
+      }
+      questionCount = 0;
+    }
+
+    // 영어 발음 읽어주기 (Web Speech API)
+    function speakCurrentWord() {
+      if (!currentQuestion || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentQuestion.question);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.92;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // ================= 한 화면 체험 모드 =================
+    function initDemoMode() {
+      initTeacher(true);
+      document.getElementById('student-play-screen').classList.remove('hidden');
+      document.getElementById('student-header').innerText = "참가자: 김민준 (체험용 내 화면)";
+
+      // 가상 학생 3명 등록 (나 + AI 친구 2명)
+      connections['demo-me'] = { isLocal: true, name: '김민준 (나)', choice: null, score: 0 };
+      connections['demo-bot1'] = { isBot: true, name: '이서연 (가상)', choice: null, score: 0 };
+      connections['demo-bot2'] = { isBot: true, name: '박지훈 (가상)', choice: null, score: 0 };
+      updateStudentBoard();
+      showToast("체험 모드 시작! [다음 문제 출제] 버튼을 눌러보세요.");
+    }
+
+    // 로컬 탭 간 통신(BroadcastChannel) 설정
+    function setupBroadcastChannel(roomCode, isHost, studentInfo = null) {
+      if (!('BroadcastChannel' in window)) return;
+      try {
+        bcChannel = new BroadcastChannel('gb500-channel-' + roomCode);
+
+        if (isHost) {
+          bcChannel.onmessage = (event) => {
+            const data = event.data;
+            if (data.type === 'JOIN') {
+              connections[data.senderId] = { isBroadcast: true, name: data.name, choice: null, score: 0 };
+              updateStudentBoard();
+              showToast(`${data.name} 학생이 입장했습니다!`);
+            } else if (data.type === 'ANSWER') {
+              if (connections[data.senderId] && !isRevealed) {
+                connections[data.senderId].choice = data.choice;
+                updateStudentBoard();
+              }
+            }
+          };
+        } else if (studentInfo) {
+          bcChannel.postMessage({ type: 'JOIN', senderId: studentInfo.id, name: studentInfo.name });
+          bcChannel.onmessage = (event) => {
+            const data = event.data;
+            if (data.type === 'NEW_QUESTION') {
+              renderStudentQuestion(data);
+            } else if (data.type === 'REVEAL') {
+              const myUpdatedScore = data.scores && data.scores[studentInfo.id] !== undefined 
+                ? data.scores[studentInfo.id] 
+                : myScore;
+              renderStudentReveal({
+                answerIndex: data.answerIndex,
+                answerText: data.answerText,
+                score: myUpdatedScore
+              });
+            }
+          };
+        }
+      } catch (e) {
+        // BroadcastChannel 미지원/차단 시 무시
+      }
+    }
+
+    // ================= 선생님 로직 =================
+    function initTeacher(demo = false) {
+      isDemoMode = demo;
+      document.getElementById('role-screen').classList.add('hidden');
+      document.getElementById('workspace').classList.remove('hidden');
+      document.getElementById('teacher-screen').classList.remove('hidden');
+      resetPool();
+
+      const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('room-code-display').innerText = roomCode;
+      setupBroadcastChannel(roomCode, true);
+
+      try {
+        if (typeof Peer !== 'undefined') {
+          peer = new Peer('gb500-' + roomCode);
+
+          peer.on('open', () => {
+            document.getElementById('room-code-display').innerText = roomCode;
+          });
+
+          peer.on('error', () => {
+            showToast("미리보기 보안 환경: 로컬/체험 모드로 작동합니다.");
+          });
+
+          peer.on('connection', (conn) => {
+            conn.on('data', (data) => {
+              if (data.type === 'JOIN') {
+                connections[conn.peer] = { conn: conn, name: data.name, choice: null, score: 0 };
+                updateStudentBoard();
+                showToast(`${data.name} 학생이 입장했습니다!`);
+              } else if (data.type === 'ANSWER') {
+                if (connections[conn.peer] && !isRevealed) {
+                  connections[conn.peer].choice = data.choice;
+                  updateStudentBoard();
+                }
+              }
+            });
+
+            conn.on('close', () => {
+              delete connections[conn.peer];
+              updateStudentBoard();
+            });
+          });
+        }
+      } catch (e) {
+        showToast("미리보기 샌드박스 환경입니다. 로컬/체험 모드로 작동합니다.");
+      }
+    }
+
+    function nextQuestion() {
+      if (questionPool.length === 0) {
+        showToast("선택한 범위의 모든 문제를 출제했습니다! 다시 섞어서 시작합니다.");
+        resetPool();
+      }
+
+      isRevealed = false;
+      questionCount++;
+      const rawQ = questionPool.pop();
+      const shuffledOptions = shuffle(rawQ.choices);
+      const answerIndex = shuffledOptions.indexOf(rawQ.correctAnswer);
+
+      currentQuestion = {
+        qNum: questionCount,
+        category: categoryNames[rawQ.category],
+        question: rawQ.question,
+        options: shuffledOptions,
+        answerIndex: answerIndex,
+        answerText: rawQ.correctAnswer
+      };
+
+      // 선생님 화면 갱신
+      document.getElementById('teacher-category').innerText = `${currentQuestion.category} (원본 #${rawQ.id})`;
+      document.getElementById('teacher-word').innerText = `Q${currentQuestion.qNum}. ${currentQuestion.question}`;
+      document.getElementById('teacher-answer-info').innerText = "";
+      document.getElementById('btn-speak').classList.remove('hidden');
+      document.getElementById('btn-reveal').disabled = false;
+
+      const previewDiv = document.getElementById('teacher-options-preview');
+      previewDiv.innerHTML = '';
+      currentQuestion.options.forEach((opt, idx) => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-left font-bold text-slate-700 text-sm sm:text-base';
+        div.innerText = `${idx + 1}. ${opt}`;
+        previewDiv.appendChild(div);
+      });
+
+      // 학생 상태 초기화 및 전송
+      Object.values(connections).forEach(student => {
+        student.choice = null;
+
+        if (student.isLocal) {
+          renderStudentQuestion({
+            qNum: currentQuestion.qNum,
+            category: currentQuestion.category,
+            question: currentQuestion.question,
+            options: currentQuestion.options
+          });
+        } else if (student.isBot) {
+          // 체험 모드 가상 학생 자동 응답 시뮬레이션 (1~2.5초 뒤 선택)
+          const delay = 800 + Math.random() * 1700;
+          setTimeout(() => {
+            if (!isRevealed && currentQuestion) {
+              const isSmart = Math.random() < 0.7;
+              student.choice = isSmart
+                ? currentQuestion.answerIndex
+                : Math.floor(Math.random() * 4);
+              updateStudentBoard();
+            }
+          }, delay);
+        } else if (student.conn) {
+          student.conn.send({
+            type: 'NEW_QUESTION',
+            qNum: currentQuestion.qNum,
+            category: currentQuestion.category,
+            question: currentQuestion.question,
+            options: currentQuestion.options
+          });
+        }
+      });
+
+      if (bcChannel) {
+        bcChannel.postMessage({
+          type: 'NEW_QUESTION',
+          qNum: currentQuestion.qNum,
+          category: currentQuestion.category,
+          question: currentQuestion.question,
+          options: currentQuestion.options
+        });
+      }
+
+      updateStudentBoard();
+      speakCurrentWord();
+    }
+
+    function revealAnswer() {
+      if (!currentQuestion || isRevealed) return;
+      isRevealed = true;
+      document.getElementById('btn-reveal').disabled = true;
+
+      document.getElementById('teacher-answer-info').innerText = 
+        `✅ 정답: ${currentQuestion.answerIndex + 1}번 (${currentQuestion.answerText})`;
+
+      // 보기 미리보기 중 정답 강조
+      const previewTags = document.getElementById('teacher-options-preview').children;
+      if (previewTags[currentQuestion.answerIndex]) {
+        previewTags[currentQuestion.answerIndex].className = 
+          'bg-emerald-100 border-2 border-emerald-500 rounded-xl py-2.5 px-4 text-left font-black text-emerald-800 text-sm sm:text-base';
+      }
+
+      // 점수 계산 및 학생 전송 (정답 +10점, 오답/미제출 -5점)
+      const broadcastScores = {};
+      Object.entries(connections).forEach(([id, student]) => {
+        if (student.choice === currentQuestion.answerIndex) {
+          student.score += 10;
+        } else {
+          student.score -= 5;
+        }
+        broadcastScores[id] = student.score;
+
+        if (student.isLocal) {
+          renderStudentReveal({
+            answerIndex: currentQuestion.answerIndex,
+            answerText: currentQuestion.answerText,
+            score: student.score
+          });
+        } else if (student.conn) {
+          student.conn.send({
+            type: 'REVEAL',
+            answerIndex: currentQuestion.answerIndex,
+            answerText: currentQuestion.answerText,
+            score: student.score
+          });
+        }
+      });
+
+      if (bcChannel) {
+        bcChannel.postMessage({
+          type: 'REVEAL',
+          answerIndex: currentQuestion.answerIndex,
+          answerText: currentQuestion.answerText,
+          scores: broadcastScores
+        });
+      }
+
+      updateStudentBoard();
+    }
+
+    function updateStudentBoard() {
+      const listDiv = document.getElementById('student-list');
+      const students = Object.values(connections);
+      document.getElementById('student-count').innerText = students.length;
+      listDiv.innerHTML = '';
+
+      if (students.length === 0) {
+        listDiv.innerHTML = `
+          <div class="col-span-full text-center text-slate-400 text-sm py-4">
+            아직 입장한 학생이 없습니다.
+          </div>`;
+        return;
+      }
+
+      // 점수 높은 순 정렬
+      students.sort((a, b) => b.score - a.score);
+
+      students.forEach(st => {
+        const card = document.createElement('div');
+        let cardStyle = 'bg-white border-slate-200 text-slate-700';
+        let statusText = "고민중...";
+
+        if (st.choice !== null) {
+          cardStyle = 'bg-blue-50 border-blue-500 text-blue-900';
+          statusText = "제출 완료 ✅";
+        }
+
+        if (isRevealed && currentQuestion) {
+          if (st.choice === currentQuestion.answerIndex) {
+            cardStyle = 'bg-emerald-50 border-emerald-500 text-emerald-800';
+            statusText = `⭕ 정답 (+10점 · ${currentQuestion.options[st.choice]})`;
+          } else {
+            cardStyle = 'bg-rose-50 border-rose-500 text-rose-800';
+            statusText = st.choice !== null
+              ? `❌ 오답 (-5점 · ${currentQuestion.options[st.choice]})`
+              : "❌ 미제출 (-5점)";
+          }
+        }
+
+        card.className = `student-card border-2 rounded-2xl p-3 text-center shadow-sm ${cardStyle}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-center gap-1.5 font-bold text-sm sm:text-base">
+            <span>${st.name}</span>
+            <span class="bg-slate-800 text-amber-400 text-xs px-2.5 py-0.5 rounded-full font-extrabold">${st.score}점</span>
+          </div>
+          <div class="text-xs sm:text-sm font-semibold mt-1.5">${statusText}</div>
+        `;
+        listDiv.appendChild(card);
+      });
+    }
+
+    // ================= 학생 로직 =================
+    let localStudentId = 'st-' + Math.random().toString(36).substring(2, 9);
+
+    function showStudentJoin() {
+      document.getElementById('role-screen').classList.add('hidden');
+      document.getElementById('workspace').classList.remove('hidden');
+      document.getElementById('student-join-screen').classList.remove('hidden');
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('input-room-code').value.trim();
+      const name = document.getElementById('input-student-name').value.trim();
+      if (!code || !name) {
+        document.getElementById('join-error').innerText = "방 코드 4자리와 이름을 모두 입력해주세요.";
+        return;
+      }
+
+      document.getElementById('join-error').innerText = "연결 중...";
+
+      // 동일 브라우저 멀티탭 접속 지원
+      setupBroadcastChannel(code, false, { id: localStudentId, name: name });
+
+      try {
+        if (typeof Peer !== 'undefined') {
+          peer = new Peer();
+
+          peer.on('open', () => {
+            hostConn = peer.connect('gb500-' + code);
+
+            hostConn.on('open', () => {
+              enterStudentPlayScreen(name);
+              hostConn.send({ type: 'JOIN', name: name });
+            });
+
+            hostConn.on('data', (data) => {
+              if (data.type === 'NEW_QUESTION') {
+                renderStudentQuestion(data);
+              } else if (data.type === 'REVEAL') {
+                renderStudentReveal(data);
+              }
+            });
+          });
+
+          peer.on('error', () => {
+            enterStudentPlayScreen(name);
+          });
+        } else {
+          enterStudentPlayScreen(name);
+        }
+      } catch (e) {
+        enterStudentPlayScreen(name);
+      }
+    }
+
+    function enterStudentPlayScreen(name) {
+      document.getElementById('student-join-screen').classList.add('hidden');
+      document.getElementById('student-play-screen').classList.remove('hidden');
+      document.getElementById('student-header').innerText = `참가자: ${name}`;
+    }
+
+    function renderStudentQuestion(data) {
+      myAnswer = null;
+      document.getElementById('student-result-msg').innerText = "";
+      document.getElementById('student-category').innerText = data.category;
+      document.getElementById('student-word').innerText = `Q${data.qNum}. ${data.question}`;
+
+      const optDiv = document.getElementById('student-options');
+      optDiv.innerHTML = '';
+      data.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-press student-opt-btn w-full text-left bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 text-slate-800 font-bold text-base sm:text-lg py-3.5 px-4 rounded-2xl transition';
+        btn.innerText = `${idx + 1}. ${optText}`;
+        btn.onclick = () => selectOption(idx, btn);
+        optDiv.appendChild(btn);
+      });
+    }
+
+    function selectOption(idx, btnElement) {
+      myAnswer = idx;
+      document.querySelectorAll('.student-opt-btn').forEach(b => {
+        b.className = 'btn-press student-opt-btn w-full text-left bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 text-slate-800 font-bold text-base sm:text-lg py-3.5 px-4 rounded-2xl transition';
+      });
+      btnElement.className = 'btn-press student-opt-btn w-full text-left bg-blue-600 border-2 border-blue-700 text-white font-bold text-base sm:text-lg py-3.5 px-4 rounded-2xl shadow-md transition';
+
+      if (isDemoMode) {
+        connections['demo-me'].choice = idx;
+        updateStudentBoard();
+      } else {
+        if (hostConn && hostConn.open) {
+          hostConn.send({ type: 'ANSWER', choice: idx });
+        }
+        if (bcChannel) {
+          bcChannel.postMessage({ type: 'ANSWER', senderId: localStudentId, choice: idx });
+        }
+      }
+    }
+
+    function renderStudentReveal(data) {
+      const buttons = document.querySelectorAll('.student-opt-btn');
+      buttons.forEach((b, idx) => {
+        b.disabled = true;
+        if (idx === data.answerIndex) {
+          b.className = 'student-opt-btn w-full text-left bg-emerald-500 border-2 border-emerald-600 text-white font-black text-base sm:text-lg py-3.5 px-4 rounded-2xl shadow-md';
+        } else if (idx === myAnswer && myAnswer !== data.answerIndex) {
+          b.className = 'student-opt-btn w-full text-left bg-rose-500 border-2 border-rose-600 text-white font-bold text-base sm:text-lg py-3.5 px-4 rounded-2xl opacity-90';
+        } else {
+          b.className = 'student-opt-btn w-full text-left bg-slate-100 border-2 border-slate-200 text-slate-400 font-bold text-base sm:text-lg py-3.5 px-4 rounded-2xl';
+        }
+      });
+
+      myScore = data.score;
+      document.getElementById('student-score-badge').innerText = `내 점수: ${myScore}점`;
+
+      const msg = document.getElementById('student-result-msg');
+      if (myAnswer === data.answerIndex) {
+        msg.className = 'text-center font-extrabold text-base sm:text-lg mt-4 text-emerald-600';
+        msg.innerText = `🎉 정답입니다! (+10점)`;
+      } else {
+        msg.className = 'text-center font-extrabold text-base sm:text-lg mt-4 text-rose-600';
+        msg.innerText = `😢 아쉽네요! (-5점) 정답은 [${data.answerText}] 입니다.`;
+      }
+    }
+  </script>
+</body>
+</html>
